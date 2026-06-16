@@ -5,9 +5,8 @@
     <summary>
       <h1>Reversal Q-Learning (RQL)</h1>
       <div style="height: 2px;"></div>
-      <h3>for Flow RL from Prior Data</h3>
       <br>
-      <h2><a href="https://arxiv.org/abs/2510.22512">Paper</a> &emsp;</h2>
+      <h2>Paper</a> &emsp;</h2>
       <h2><a href="https://aober.ai/rql">Website</a> &emsp;</h2>
     </summary>
   </ul>
