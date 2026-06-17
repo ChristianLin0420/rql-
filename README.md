@@ -5,7 +5,6 @@
     <summary>
       <h1>Reversal Q-Learning (RQL)</h1>
       <div style="height: 2px;"></div>
-      <br>
       <h2><a href="https://arxiv.org/abs/2606.17551">Paper</a> &emsp;</h2>
       <h2><a href="https://aober.ai/rql">Website</a> &emsp;</h2>
     </summary>
@@ -14,7 +13,7 @@
 
 </div>
 
-![teaser](assets/teaser.png)
+![teaser](assets/teaser.gif)
 
 
 
