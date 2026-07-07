@@ -197,6 +197,34 @@ class Value(nn.Module):
         return v
 
 
+class OneStepGenerator(nn.Module):
+    """One-step drifting generator (policy): (obs, noise) -> action, single forward pass.
+
+    Unlike a flow/diffusion actor, there is NO time variable and NO iterative sampling.
+    The distribution is shaped during training by the drift loss.
+
+    Attributes:
+        hidden_dims: Hidden layer dimensions.
+        action_dim: Output action dimension (chunked = h * base_action_dim).
+        layer_norm: Whether to apply layer normalization.
+        tanh_squash: Whether to squash outputs into [-1, 1] with tanh.
+    """
+
+    hidden_dims: Sequence[int]
+    action_dim: int
+    layer_norm: bool = False
+    tanh_squash: bool = True
+
+    @nn.compact
+    def __call__(self, observations, noise):
+        x = jnp.concatenate([observations, noise], axis=-1)
+        x = MLP(self.hidden_dims, activate_final=True, layer_norm=self.layer_norm)(x)
+        a = nn.Dense(self.action_dim, kernel_init=default_init(1.0))(x)
+        if self.tanh_squash:
+            a = jnp.tanh(a)
+        return a
+
+
 class ActorVectorField(nn.Module):
     """Actor vector field network for flow matching.
 

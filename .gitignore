@@ -19,3 +19,5 @@ resources
 *nfs*
 run.sh
 run_supp.sh
+logs/
+external/

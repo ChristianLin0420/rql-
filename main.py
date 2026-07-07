@@ -48,8 +48,20 @@ config_flags.DEFINE_config_file('agent', 'agents/rql.py', lock_config=False)
 
 def main(_):
     # Set up logger.
-    exp_name = get_exp_name(FLAGS.seed)
-    setup_wandb(project='rql', group=FLAGS.run_group, name=exp_name)
+    cfg = FLAGS.agent
+    # Build a meaningful, human-readable run name: agent + env + key hyperparameters.
+    def _g(k):
+        try:
+            return cfg[k]
+        except KeyError:
+            return None
+    parts = [f"{cfg['agent_name']}", f"{FLAGS.env_name}", f"h{_g('h')}", f"a{_g('alpha')}", f"exp{_g('expectile')}"]
+    for k in ("rho", "ensemble_ct", "flow_steps", "n_gen", "discount"):
+        if _g(k) is not None:
+            parts.append(f"{k}{_g(k)}")
+    exp_name = "__".join(parts[:2]) + "__" + "_".join(parts[2:]) + f"__{get_exp_name(FLAGS.seed)}"
+    wandb_project = os.environ.get('WANDB_PROJECT', 'rql-iclr2027-kernel-analysis')
+    setup_wandb(project=wandb_project, group=FLAGS.run_group, name=exp_name)
     
     FLAGS.save_dir = os.path.join(FLAGS.save_dir, wandb.run.project, FLAGS.run_group, exp_name)
     os.makedirs(FLAGS.save_dir, exist_ok=True)
