@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 590" font-family="Georgia, 'Times New Roman', serif">
+  <defs>
+    <marker id="ah" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#111"/></marker>
+    <marker id="ahsharp" markerWidth="12" markerHeight="12" refX="6" refY="3.4" orient="auto"><path d="M0,0 L9,3.4 L0,6.8 Z" fill="#4a238f"/></marker>
+    <marker id="ahsoft" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#b9a4e3"/></marker>
+    <radialGradient id="vbg" cx="55%" cy="26%" r="82%">
+      <stop offset="0%" stop-color="#C6A9F0"/><stop offset="45%" stop-color="#E6DCF7"/><stop offset="100%" stop-color="#F7F4FD"/>
+    </radialGradient>
+  </defs>
+  <rect x="0" y="0" width="1280" height="590" fill="#ffffff"/>
+  <text x="640" y="32" text-anchor="middle" font-size="21" font-weight="bold" fill="#111">DQL v11.2: strength levers on the (now-stable) drift actor</text>
+  <text x="640" y="55" text-anchor="middle" font-size="13" fill="#555">v11.1 fixed STABILITY (swing 0.16&#8594;0.08) but plateaued STABLE-BUT-WEAK at ~0.38. v11.2 keeps that stability and pushes strength &#8212; still drift-based.</text>
+
+  <!-- ===================== LEFT: sharper + stronger drift ===================== -->
+  <rect x="34" y="78" width="600" height="446" rx="20" fill="url(#vbg)" stroke="#111" stroke-width="3"/>
+  <text x="334" y="106" text-anchor="middle" font-size="15.5" font-weight="bold" fill="#111">sharper + stronger drift toward the argmax-advantage action</text>
+
+  <!-- v11.1 soft (faded) vs v11.2 sharp -->
+  <text x="150" y="140" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#9d86cf">v11.1 (soft, short)</text>
+  <text x="470" y="140" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#4a238f">v11.2 (sharp, long)</text>
+
+  <!-- v11.1 side: soft weights, short pull -->
+  <circle cx="185" cy="250" r="14" fill="#C3ABF0" stroke="#7a63b0" stroke-width="1.6"/>
+  <text x="185" y="224" text-anchor="middle" font-size="11" fill="#7a63b0">A* w&#8776;0.7</text>
+  <circle cx="110" cy="310" r="10" fill="#CFC2EC" stroke="#8a76bf" stroke-width="1.2"/><text x="96" y="330" font-size="10" fill="#8a76bf">0.1</text>
+  <circle cx="250" cy="330" r="9" fill="#CFC2EC" stroke="#8a76bf" stroke-width="1.2"/><text x="264" y="346" font-size="10" fill="#8a76bf">0.1</text>
+  <circle cx="150" cy="410" r="12" fill="#A78BFA" stroke="#111" stroke-width="1.8"/><text x="150" y="414" text-anchor="middle" font-size="10" fill="#fff">&#227;</text>
+  <path d="M160,402 C172,370 178,320 182,266" fill="none" stroke="#b9a4e3" stroke-width="3" marker-end="url(#ahsoft)"/>
+  <text x="150" y="440" text-anchor="middle" font-size="11" fill="#9d86cf">blurred pull &#8594; 0.38 plateau</text>
+
+  <!-- v11.2 side: sharp weight, long pull -->
+  <circle cx="500" cy="230" r="22" fill="#4a238f" stroke="#241338" stroke-width="2.5"/>
+  <text x="500" y="200" text-anchor="middle" font-size="11.5" font-weight="bold" fill="#241338">A* w&#8776;0.9</text>
+  <circle cx="415" cy="320" r="6" fill="#CFC2EC" stroke="#8a76bf" stroke-width="1"/><text x="404" y="336" font-size="9.5" fill="#8a76bf">0.02</text>
+  <circle cx="560" cy="340" r="6" fill="#CFC2EC" stroke="#8a76bf" stroke-width="1"/><text x="574" y="352" font-size="9.5" fill="#8a76bf">0.02</text>
+  <circle cx="420" cy="430" r="13" fill="#8B5CF6" stroke="#111" stroke-width="2.4"/><text x="420" y="434" text-anchor="middle" font-size="10.5" fill="#fff">&#227;</text>
+  <path d="M436,422 C470,380 484,300 496,258" fill="none" stroke="#4a238f" stroke-width="6" marker-end="url(#ahsharp)"/>
+  <text x="430" y="462" text-anchor="middle" font-size="11.5" font-weight="bold" fill="#4a238f">sharp, long pull &#8594; more improvement</text>
+
+  <text x="334" y="504" text-anchor="middle" font-size="11.5" fill="#333">adv_temp 0.5&#8594;0.25 (peak on A*)  &#183;  drift_step 1.0&#8594;1.5 (pull further)  &#183;  stability kept</text>
+
+  <!-- ===================== RIGHT-TOP: expectile correction ===================== -->
+  <rect x="662" y="78" width="584" height="196" rx="18" fill="#F4F0FB" stroke="#111" stroke-width="2.5"/>
+  <text x="954" y="104" text-anchor="middle" font-size="15" font-weight="bold" fill="#7a1f1f">the bigger lever: expectile (our own v10 finding)</text>
+  <text x="954" y="126" text-anchor="middle" font-size="12" fill="#555">v11/v11.1 antmaze used expectile 0.5 (RQL's flow-value setting) = BEHAVIOR value</text>
+  <text x="954" y="143" text-anchor="middle" font-size="12" fill="#555">&#8594; V has no max &#8594; NO improvement signal &#8594; policy caps at behavior level (~0.38)</text>
+  <!-- expectile bar -->
+  <text x="700" y="185" font-size="12.5" fill="#7a1f1f" font-weight="bold">&#954;=0.5</text>
+  <rect x="748" y="174" width="120" height="16" fill="#d9c9c9" stroke="#b0a0a0"/><text x="808" y="205" text-anchor="middle" font-size="11" fill="#7a1f1f">behavior value (flat)</text>
+  <text x="900" y="185" font-size="12.5" fill="#1c7a4d" font-weight="bold">&#954;=0.7</text>
+  <rect x="948" y="168" width="220" height="28" fill="#bfe3cf" stroke="#1c7a4d"/><text x="1058" y="186" text-anchor="middle" font-size="11.5" fill="#12633c" font-weight="bold">optimistic &#8594; improvement headroom</text>
+  <text x="954" y="238" text-anchor="middle" font-size="12.5" fill="#12633c" font-weight="bold">v11.2 antmaze uses expectile 0.7 (IQL-style critic needs it) &#8212; run flag, not code.</text>
+  <text x="954" y="258" text-anchor="middle" font-size="11.5" fill="#666">(v10 ablation: &#954;=0.5 failed 0.02, &#954;=0.9 unlocked 0.22)</text>
+
+  <!-- ===================== RIGHT-BOTTOM: 3-env validation ===================== -->
+  <rect x="662" y="288" width="584" height="236" rx="18" fill="#EDE6FB" stroke="#111" stroke-width="2.5"/>
+  <text x="954" y="314" text-anchor="middle" font-size="15" font-weight="bold" fill="#111">parallel validation: 3 antmaze envs</text>
+  <g font-size="12.5" fill="#241338">
+    <rect x="690" y="332" width="528" height="40" rx="9" fill="#fff" stroke="#8a76bf"/>
+    <text x="704" y="357" font-size="13" font-weight="bold" fill="#4a238f">antmaze-medium</text><text x="900" y="350" font-size="11.5" fill="#555">easier stitching</text><text x="900" y="366" font-size="11.5" fill="#555">RQL high; sanity that v11.2 reaches strong</text>
+    <rect x="690" y="378" width="528" height="40" rx="9" fill="#fff" stroke="#8a76bf"/>
+    <text x="704" y="403" font-size="13" font-weight="bold" fill="#4a238f">antmaze-large</text><text x="900" y="396" font-size="11.5" fill="#555">the v11.1 baseline (0.38)</text><text x="900" y="412" font-size="11.5" fill="#555">head-to-head: does v11.2 clear 0.5?</text>
+    <rect x="690" y="424" width="528" height="40" rx="9" fill="#fff" stroke="#8a76bf"/>
+    <text x="704" y="449" font-size="13" font-weight="bold" fill="#4a238f">antmaze-giant</text><text x="900" y="442" font-size="11.5" fill="#555">hard long-horizon (RQL 0.37)</text><text x="900" y="458" font-size="11.5" fill="#555">stress test of the stronger pull</text>
+  </g>
+  <text x="954" y="494" text-anchor="middle" font-size="12.5" fill="#111" font-weight="bold">Gate: antmaze-large clears 0.5 (mean&#8805;250k) &#8594; launch cube-double.</text>
+  <text x="954" y="513" text-anchor="middle" font-size="11.5" fill="#666">all h=1, &#961;=0.5, expectile 0.7, seed 0, 500k steps</text>
+
+  <text x="34" y="566" font-size="13" fill="#222">v11.2 = v11.1 stability (kept) + <tspan fill="#4a238f" font-weight="bold">sharper/stronger drift</tspan> + <tspan fill="#12633c" font-weight="bold">expectile 0.7</tspan> (improvement signal). Validated on 3 antmaze envs in parallel.</text>
+</svg>

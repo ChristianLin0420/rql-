@@ -242,7 +242,7 @@ def main(_):
             eval_logger.log(eval_metrics, step=i)
 
         # Save agent.
-        if i % FLAGS.save_interval == FLAGS.save_interval - 1 and i > FLAGS.offline_steps:
+        if FLAGS.save_interval != 0 and i % FLAGS.save_interval == 0 and i >= FLAGS.save_interval:
             save_agent(agent, FLAGS.save_dir, i)
 
     train_logger.close()

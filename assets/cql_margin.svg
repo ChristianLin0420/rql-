@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 468" font-family="Georgia, 'Times New Roman', serif">
+  <defs>
+    <marker id="ah" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#111"/></marker>
+    <marker id="ahp" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#7C4DD6"/></marker>
+    <marker id="ahr" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#E07A9B"/></marker>
+    <marker id="ahg" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#8a8a8a"/></marker>
+  </defs>
+  <rect x="0" y="0" width="1200" height="468" fill="#ffffff"/>
+  <text x="600" y="34" text-anchor="middle" font-size="22" font-weight="bold" fill="#111">Controlling CQL conservatism: the margin fix</text>
+
+  <!-- ================= PANEL A: Q-landscape / margin mechanism ================= -->
+  <rect x="34" y="58" width="536" height="386" rx="16" fill="#F6F3FD" stroke="#111" stroke-width="2.5"/>
+  <text x="302" y="86" text-anchor="middle" font-size="16" font-weight="bold" fill="#111">(A) CQL push-down on OOD actions</text>
+  <!-- axes -->
+  <line x1="150" y1="120" x2="150" y2="404" stroke="#555" stroke-width="2"/>
+  <line x1="150" y1="404" x2="536" y2="404" stroke="#555" stroke-width="2"/>
+  <text x="132" y="124" text-anchor="end" font-size="14" fill="#555">Q</text>
+  <text x="540" y="408" font-size="14" fill="#555">a</text>
+
+  <!-- data-Q level -->
+  <line x1="150" y1="150" x2="520" y2="150" stroke="#6a3cc0" stroke-width="4"/>
+  <circle cx="300" cy="150" r="7" fill="#6a3cc0"/>
+  <text x="330" y="144" font-size="14" fill="#4a238f" font-weight="bold">Q(s, a) &#8212; data</text>
+
+  <!-- unbounded (runaway) -->
+  <path d="M210,164 L210,392" stroke="#E07A9B" stroke-width="3" stroke-dasharray="5 3" marker-end="url(#ahr)"/>
+  <text x="196" y="300" text-anchor="end" font-size="13" fill="#c85a80">unbounded:</text>
+  <text x="196" y="318" text-anchor="end" font-size="13" fill="#c85a80">no stop &#8594; runaway</text>
+
+  <!-- self-limiting (m=0), too weak -->
+  <line x1="380" y1="158" x2="510" y2="158" stroke="#8a8a8a" stroke-width="2.5" stroke-dasharray="5 3"/>
+  <circle cx="445" cy="158" r="5" fill="#bdbdbd" stroke="#8a8a8a"/>
+  <text x="445" y="176" text-anchor="middle" font-size="12.5" fill="#777">m=0 (too weak)</text>
+
+  <!-- margin (controlled) -->
+  <line x1="240" y1="252" x2="520" y2="252" stroke="#7C4DD6" stroke-width="3.5"/>
+  <circle cx="330" cy="252" r="6" fill="#8B5CF6" stroke="#111" stroke-width="1.5"/>
+  <text x="356" y="272" font-size="13" fill="#7C4DD6" font-weight="bold">Q(s, &#227;) = data &#8722; m&#183;|Q|</text>
+  <path d="M330,164 L330,240" stroke="#7C4DD6" stroke-width="3" marker-end="url(#ahp)"/>
+
+  <!-- margin bracket -->
+  <path d="M300,150 L282,150 M282,150 L282,252 M282,252 L300,252" fill="none" stroke="#111" stroke-width="1.6"/>
+  <text x="276" y="205" text-anchor="end" font-size="14" fill="#111" font-weight="bold">m&#183;|Q|</text>
+  <text x="240" y="392" font-size="12.5" fill="#111">hinge: penalty = 0 once reached &#8658; bounded</text>
+
+  <!-- ================= PANEL B: cql_gap dynamics ================= -->
+  <rect x="594" y="58" width="572" height="386" rx="16" fill="#FBFAFE" stroke="#111" stroke-width="2.5"/>
+  <text x="880" y="86" text-anchor="middle" font-size="16" font-weight="bold" fill="#111">(B) cql_gap = Q(data) &#8722; Q(OOD) over training</text>
+  <line x1="660" y1="120" x2="660" y2="404" stroke="#555" stroke-width="2"/>
+  <line x1="660" y1="404" x2="1130" y2="404" stroke="#555" stroke-width="2"/>
+  <text x="642" y="124" text-anchor="end" font-size="14" fill="#555">gap</text>
+  <text x="1134" y="408" font-size="14" fill="#555">steps</text>
+
+  <!-- target line m|Q| -->
+  <line x1="660" y1="270" x2="1120" y2="270" stroke="#7C4DD6" stroke-width="1.6" stroke-dasharray="6 4"/>
+  <text x="1124" y="274" font-size="12.5" fill="#7C4DD6">m&#183;|Q|</text>
+
+  <!-- unbounded: shoots up off top -->
+  <path d="M660,392 C740,392 760,300 800,180 C818,126 826,120 832,120" fill="none" stroke="#E07A9B" stroke-width="3.5"/>
+  <path d="M832,120 L840,110" stroke="#E07A9B" stroke-width="3.5" marker-end="url(#ahr)"/>
+  <text x="852" y="128" font-size="12.5" fill="#c85a80" font-weight="bold">unbounded (R6): runaway 262+</text>
+  <text x="852" y="146" font-size="12" fill="#c85a80">antmaze: unlock 0.32 &#8594; decay</text>
+
+  <!-- self-limiting: flat ~0 -->
+  <path d="M660,392 C760,392 900,388 1120,388" fill="none" stroke="#8a8a8a" stroke-width="3" stroke-dasharray="6 3"/>
+  <text x="900" y="382" font-size="12.5" fill="#777" font-weight="bold">self-limiting m=0 (R7): &#8776; 0</text>
+  <text x="900" y="400" font-size="12" fill="#777">antmaze: never unlocks</text>
+
+  <!-- margin: rises to target and holds -->
+  <path d="M660,392 C720,392 780,300 860,276 C940,258 1040,270 1120,270" fill="none" stroke="#7C4DD6" stroke-width="4"/>
+  <circle cx="1120" cy="270" r="5" fill="#8B5CF6" stroke="#111" stroke-width="1"/>
+  <text x="726" y="252" font-size="12.5" fill="#7C4DD6" font-weight="bold">margin (R8): stabilizes at m&#183;|Q|</text>
+  <text x="726" y="322" font-size="12" fill="#4a238f">goal: antmaze unlock + hold</text>
+
+  <text x="34" y="462" font-size="13" fill="#222"><tspan fill="#E07A9B" font-weight="bold">unbounded</tspan> over-conservative (compounds) &#183; <tspan fill="#8a8a8a" font-weight="bold">m=0</tspan> too weak &#183; <tspan fill="#7C4DD6" font-weight="bold">margin</tspan> = controlled conservatism (bounded at m&#183;|Q|).</text>
+</svg>

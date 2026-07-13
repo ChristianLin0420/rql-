@@ -91,12 +91,30 @@ class DQLAgent(flax.struct.PyTreeNode):
 
         target_q, valids = self._nstep_target(batch, next_val)
         q = self.network.select("critic")(s, actions, params=grad_params)  # [ens, B]
-        critic_loss = (((q - target_q[None]) ** 2).mean(axis=0) * valids).mean()
+        td_loss = (((q - target_q[None]) ** 2).mean(axis=0) * valids).mean()
+
+        # CQL conservatism: push Q DOWN on generator (OOD) actions, UP on data actions.
+        # Directly flattens the shared-ensemble overestimation bump that LCB cannot catch;
+        # the generator's own samples serve as the OOD negatives.
+        Kc = self.config["n_cql"]
+        eps = jax.random.normal(rng, (B, Kc, self.config["action_dim"]))
+        s_rep = repeat(s, "b o -> (b k) o", k=Kc)
+        a_ood = self.network.select("actor")(s_rep, rearrange(eps, "b k a -> (b k) a"))  # stored (no actor grad)
+        q_ood = self.network.select("critic")(s_rep, a_ood, params=grad_params).mean()   # grad -> critic
+        # SELF-LIMITING CQL: one-sided hinge (penalize only OOD-Q ABOVE data-Q) + value-scale
+        # normalization. Once OOD-Q <= data-Q the penalty is 0, so the gap can't compound to
+        # hundreds (the unbounded form did); alpha_cql is scale-free across envs.
+        qn = jax.lax.stop_gradient(jnp.abs(q).mean() + 1e-6)
+        # margin m: drive OOD-Q to m*|Q| BELOW data-Q, then stop (hinge). gap self-stabilizes at m*|Q|.
+        # (NOT divided by |Q|: keep full push strength; |Q| only sizes the scale-aware margin.)
+        cql = self.config["alpha_cql"] * jax.nn.relu(q_ood - q.mean() + self.config["cql_margin"] * qn)
+        critic_loss = td_loss + cql
 
         adv = (q_tgt - v).mean()
         return value_loss, critic_loss, {
             "value_loss": value_loss,
-            "critic_loss": critic_loss,
+            "critic_loss": td_loss,
+            "cql_gap": q.mean() - q_ood,   # data_Q - ood_Q; should become > 0 (conservative)
             "v_mean": v.mean(),
             "q_mean": q.mean(),
             "adv_mean": adv,
@@ -120,44 +138,59 @@ class DQLAgent(flax.struct.PyTreeNode):
         B, A = a_data.shape
         G = self.config["n_gen"]
 
-        # Q(s_i, a_j) for every (state, data-action) pair -> [B, B]
-        si = repeat(s, "i o -> (i j) o", j=B)
-        aj = repeat(a_data, "j a -> (i j) a", i=B)
-        q_ij = self._q_lcb("critic", si, aj).reshape(B, B)
-        q_ij = jax.lax.stop_gradient(q_ij)
-        q_n = (q_ij - q_ij.mean(-1, keepdims=True)) / (q_ij.std(-1, keepdims=True) + 1e-6)
+        # Candidate pool per state = the M nearest states' data actions (top-M subsample of the
+        # batch; far states get ~0 softmax weight anyway). Cost: B*M critic evals, not B*B.
+        M = min(self.config["n_cand"], B)
         sq_s = jnp.sum((s[:, None, :] - s[None, :, :]) ** 2, axis=-1)          # [B, B]
+        nn = jnp.argsort(sq_s, axis=-1)[:, :M]                                 # [B, M] nearest states (incl self)
+        a_cand = a_data[nn]                                                    # [B, M, A]
+        sq_sel = jnp.take_along_axis(sq_s, nn, axis=-1)                        # [B, M]
+        si = repeat(s, "i o -> (i m) o", m=M)
+        am = rearrange(a_cand, "b m a -> (b m) a")
+        q_im = self._q_lcb("critic", si, am).reshape(B, M)                     # Q(s_i, a_cand)
+        q_im = jax.lax.stop_gradient(q_im)
+        q_n = (q_im - q_im.mean(-1, keepdims=True)) / (q_im.std(-1, keepdims=True) + 1e-6)
         bw_s = self.config["state_bw"] * (jax.lax.stop_gradient(sq_s.mean()) + 1e-8)
-        w = jax.lax.stop_gradient(jax.nn.softmax(q_n / self.config["alpha"] - sq_s / bw_s, axis=-1))  # [B,B]
+        w = jax.lax.stop_gradient(jax.nn.softmax(q_n / self.config["alpha"] - sq_sel / bw_s, axis=-1))  # [B,M]
 
         eps = jax.random.normal(rng, (B, G, A))
         s_rep = repeat(s, "b o -> b g o", g=G)
         gen = self.network.select("actor")(s_rep, eps, params=grad_params)     # [B, G, A]
         gsg = jax.lax.stop_gradient(gen)
-        a_sq = jnp.sum(a_data ** 2, axis=-1)                                   # [B(j)]
+        c_sq = jnp.sum(a_cand ** 2, axis=-1)                                   # [B, M]
         g_sq = jnp.sum(gsg ** 2, axis=-1)                                      # [B, G]
 
-        # attraction S_p: normalized mean-shift toward the value-selected data actions (kernel x w)
-        dist_pa = g_sq[..., None] + a_sq[None, None, :] - 2 * jnp.einsum("bga,ja->bgj", gsg, a_data)  # [B,G,B]
-        tau2 = self.config["tau_scale"] * (jax.lax.stop_gradient(dist_pa.mean()) + 1e-8)
-        kern_p = jnp.exp(-dist_pa / (2 * tau2)) * w[:, None, :]
-        mean_p = jnp.einsum("bgj,ja->bga", kern_p, a_data) / (kern_p.sum(-1, keepdims=True) + 1e-12)
+        # attraction S_p: normalized mean-shift toward the value-selected candidate actions (kernel x w)
+        dist_pc = g_sq[..., None] + c_sq[:, None, :] - 2 * jnp.einsum("bga,bma->bgm", gsg, a_cand)  # [B,G,M]
+        tau2 = self.config["tau_scale"] * (jax.lax.stop_gradient(dist_pc.mean()) + 1e-8)
+        kern_p = jnp.exp(-dist_pc / (2 * tau2)) * w[:, None, :]
+        mean_p = jnp.einsum("bgm,bma->bga", kern_p, a_cand) / (kern_p.sum(-1, keepdims=True) + 1e-12)
 
         # repulsion S_q: normalized mean-shift over generator samples (exclude self)
         dist_gg = g_sq[..., None] + g_sq[:, None, :] - 2 * jnp.einsum("bga,bha->bgh", gsg, gsg)   # [B,G,G]
         kern_q = jnp.exp(-dist_gg / (2 * tau2)) * (1.0 - jnp.eye(G))[None]
         mean_q = jnp.einsum("bgh,bha->bga", kern_q, gsg) / (kern_q.sum(-1, keepdims=True) + 1e-12)
 
-        V = mean_p - mean_q                                                   # [B, G, A]
+        # CONSTRAINED Q-ascent (RQL-style): bounded, unit-norm step up the LCB value, evaluated
+        # locally at gen (#1 bounded, #2 near-data via the trust region, #4 pessimistic LCB).
+        # The drift-to-data mean_p is the trust region (#3) that keeps the ascent in-support.
+        gflat = rearrange(gsg, "b g a -> (b g) a")
+        sflat = repeat(s, "b o -> (b g) o", g=G)
+        grad_q = jax.grad(lambda a: self._q_lcb("critic", sflat, a).sum())(gflat)   # d Q_lcb / d a
+        asc = grad_q / (jnp.linalg.norm(grad_q, axis=-1, keepdims=True) + 1e-8)     # unit dir (bounded)
+        asc = rearrange(asc, "(b g) a -> b g a", g=G)
+
+        V = (mean_p - mean_q) + self.config["q_step"] * asc                   # drift (trust region) + bounded ascent
         goal = jax.lax.stop_gradient(gen + self.config["drift_step"] * V)
-        actor_loss = ((gen - goal) ** 2).sum(-1).mean()                      # gradient-free drift regression
+        actor_loss = ((gen - goal) ** 2).sum(-1).mean()
 
         info = {
             "actor_drift_loss": actor_loss,
-            "drift_norm": jnp.sqrt((V ** 2).sum(-1)).mean(),
+            "drift_norm": jnp.sqrt(((mean_p - mean_q) ** 2).sum(-1)).mean(),
+            "ascent_norm": self.config["q_step"],
             "tau2": tau2,
-            "w_self": jnp.diag(w).mean(),     # weight the policy puts on its own data action
-            "w_max": w.max(-1).mean(),        # peakedness of the value+proximity selection
+            "w_self": w[:, 0].mean(),          # weight on nearest state (self) among candidates
+            "w_max": w.max(-1).mean(),
             "gen_std": gen.std(),
         }
         return actor_loss, info
@@ -272,10 +305,15 @@ def get_config():
             critic_next_samples=4,  # K policy samples at s' for sac-mode target
             ensemble_ct=10,     # Q ensemble (for LCB uncertainty)
             rho=0.5,            # LCB pessimism: Q_lcb = mean - rho*std (anti-overestimation)
+            alpha_cql=3.0,      # CQL enforcement strength (hinge; 0 = off)
+            cql_margin=0.2,     # target conservatism: OOD-Q driven to cql_margin*|Q| below data-Q
+            n_cql=4,            # generator samples per state used as CQL OOD negatives
             n_gen=16,           # generator samples per state (repulsion set)
+            n_cand=32,          # top-M nearest-state candidate actions for value-selection (B*M critic evals, not B*B)
             state_bw=0.15,      # state-proximity bandwidth (x mean sq dist) in the value+proximity selection
             tau_scale=0.5,      # action-kernel bandwidth tau^2 = tau_scale * mean pairwise sq dist
             drift_step=1.0,     # step size for the drift regression target x + drift_step * V
+            q_step=0.3,         # bounded LCB Q-ascent step (RQL-style constrained gradient); 0 = gradient-free
             eval_samples=32,    # candidates at eval; pick argmax_a Q(s,a)
             expl_temp=1.0,      # noise scale during online exploration
             lr=3e-4,

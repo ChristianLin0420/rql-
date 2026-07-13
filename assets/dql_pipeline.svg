@@ -1,0 +1,139 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1340 598" font-family="Georgia, 'Times New Roman', serif">
+  <defs>
+    <marker id="ah" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#111"/></marker>
+    <marker id="ahp" markerWidth="10" markerHeight="10" refX="6.5" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#7C4DD6"/></marker>
+    <marker id="ahps" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#7C4DD6"/></marker>
+    <marker id="ahd" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#4a238f"/></marker>
+    <marker id="ahr" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#E07A9B"/></marker>
+    <marker id="ahnet" markerWidth="8.5" markerHeight="8.5" refX="5.5" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#111"/></marker>
+    <radialGradient id="vbg" cx="78%" cy="24%" r="82%">
+      <stop offset="0%" stop-color="#C6A9F0"/><stop offset="42%" stop-color="#E6DCF7"/><stop offset="100%" stop-color="#F7F4FD"/>
+    </radialGradient>
+    <radialGradient id="hill" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#6a3cc0"/><stop offset="45%" stop-color="#9c7ce6" stop-opacity="0.45"/><stop offset="100%" stop-color="#9c7ce6" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect x="0" y="0" width="1340" height="598" fill="#ffffff"/>
+  <text x="670" y="34" text-anchor="middle" font-size="24" font-weight="bold" fill="#111">Drift Q-Learning (DQL): one-step drifting policy + constrained value-selection</text>
+
+  <!-- update-theta staple -->
+  <path d="M980,150 C980,90 946,62 864,62 L300,62 C258,62 240,96 240,151" fill="none" stroke="#7C4DD6" stroke-width="2.6" stroke-dasharray="9 5" marker-end="url(#ahp)"/>
+  <text x="556" y="54" text-anchor="middle" font-size="15" fill="#7C4DD6">update &#952; &#8212; policy improvement</text>
+
+  <!-- ===== inputs ===== -->
+  <circle cx="70" cy="172" r="25" fill="#EDE6FB" stroke="#111" stroke-width="2.5"/>
+  <text x="70" y="180" text-anchor="middle" font-size="20" font-style="italic">&#949;</text>
+  <text x="70" y="214" text-anchor="middle" font-size="15" fill="#444">&#949; ~ N(0, I)</text>
+  <rect x="44" y="244" width="52" height="42" rx="12" fill="#E8E8E8" stroke="#111" stroke-width="2.5"/>
+  <text x="70" y="273" text-anchor="middle" font-size="21" font-style="italic" font-weight="bold">s</text>
+  <text x="70" y="304" text-anchor="middle" font-size="15" fill="#444">state</text>
+
+  <!-- ===== one-step generator ===== -->
+  <rect x="148" y="150" width="186" height="146" rx="20" fill="#B79CEE" stroke="#111" stroke-width="3"/>
+  <text x="241" y="222" text-anchor="middle" font-size="29" font-style="italic" font-weight="bold" fill="#1c1030">&#960;&#952;</text>
+  <text x="241" y="253" text-anchor="middle" font-size="15" fill="#241338">one-step generator</text>
+  <path d="M95,172 C120,172 128,192 146,197" fill="none" stroke="#111" stroke-width="2.5" marker-end="url(#ah)"/>
+  <path d="M96,265 C120,265 128,250 146,244" fill="none" stroke="#111" stroke-width="2.5" marker-end="url(#ah)"/>
+  <text x="241" y="326" text-anchor="middle" font-size="15" fill="#111">a = &#960;&#952;(s, &#949;) &#183; single forward pass</text>
+  <text x="241" y="346" text-anchor="middle" font-size="14" fill="#7C4DD6">no flow, no reversal (vs RQL)</text>
+
+  <!-- gen -> drift -->
+  <circle cx="352" cy="198" r="11" fill="#A78BFA" stroke="#111" stroke-width="2"/>
+  <circle cx="352" cy="228" r="11" fill="#A78BFA" stroke="#111" stroke-width="2"/>
+  <circle cx="352" cy="258" r="11" fill="#A78BFA" stroke="#111" stroke-width="2"/>
+  <text x="352" y="284" text-anchor="middle" font-size="12.5" fill="#444">G samples &#227;</text>
+  <path d="M334,214 L343,206" stroke="#111" stroke-width="2" marker-end="url(#ah)"/>
+  <path d="M370,228 L386,228" fill="none" stroke="#111" stroke-width="3" marker-end="url(#ah)"/>
+
+  <!-- ===================== DRIFT BLOCK ===================== -->
+  <rect x="392" y="70" width="480" height="356" rx="22" fill="url(#vbg)" stroke="#111" stroke-width="3"/>
+  <text x="632" y="100" text-anchor="middle" font-size="19" font-weight="bold" fill="#111">Constrained drift in action space</text>
+  <text x="632" y="119" text-anchor="middle" font-size="12.5" fill="#555">value surface (bright = high Q) &#183; samples drift to value-selected data</text>
+  <circle cx="786" cy="196" r="64" fill="url(#hill)"/>
+
+  <circle cx="786" cy="196" r="13" fill="#6a3cc0" stroke="#3d1d78" stroke-width="2"/>
+  <circle cx="744" cy="236" r="10" fill="#8b6fd0" stroke="#4a2f88" stroke-width="1.5"/>
+  <text x="786" y="158" text-anchor="middle" font-size="12.5" fill="#4a238f" font-weight="bold">high-value data</text>
+  <circle cx="600" cy="150" r="9" fill="#CFC2EC" stroke="#8a76bf" stroke-width="1.4"/>
+  <circle cx="838" cy="352" r="9" fill="#D6CBEF" stroke="#8a76bf" stroke-width="1.4"/>
+  <circle cx="700" cy="388" r="9" fill="#CFC2EC" stroke="#8a76bf" stroke-width="1.4"/>
+  <circle cx="470" cy="360" r="9" fill="#D6CBEF" stroke="#8a76bf" stroke-width="1.4"/>
+
+  <circle cx="600" cy="322" r="11" fill="#A78BFA" stroke="#111" stroke-width="2"/>
+  <circle cx="682" cy="298" r="11" fill="#A78BFA" stroke="#111" stroke-width="2"/>
+  <circle cx="636" cy="384" r="11" fill="#A78BFA" stroke="#111" stroke-width="2"/>
+  <path d="M610,313 L728,236" fill="none" stroke="#9B7EDE" stroke-width="2.4" marker-end="url(#ahps)"/>
+  <path d="M691,289 L760,216" fill="none" stroke="#9B7EDE" stroke-width="2.4" marker-end="url(#ahps)"/>
+  <path d="M624,378 L602,336" fill="none" stroke="#E07A9B" stroke-width="2.4" stroke-dasharray="4 3" marker-end="url(#ahr)"/>
+  <path d="M648,378 L676,314" fill="none" stroke="#E07A9B" stroke-width="2.4" stroke-dasharray="4 3" marker-end="url(#ahr)"/>
+
+  <!-- focal particle: NET drift only -->
+  <circle cx="536" cy="316" r="16" fill="#8B5CF6" stroke="#111" stroke-width="3"/>
+  <text x="536" y="321" text-anchor="middle" font-size="14" font-style="italic" fill="#fff">&#227;</text>
+  <path d="M550,306 L632,246" fill="none" stroke="#111" stroke-width="5.5" marker-end="url(#ahnet)"/>
+  <g stroke="#111" stroke-width="3"><path d="M630,236 l12,12 M642,236 l-12,12"/></g>
+  <text x="580" y="232" text-anchor="middle" font-size="12.5" fill="#111">target = sg(&#227; + &#951;V)</text>
+
+  <!-- ===================== REGRESS (visual) ===================== -->
+  <path d="M872,222 L908,222" fill="none" stroke="#111" stroke-width="3" marker-end="url(#ah)"/>
+  <rect x="910" y="148" width="160" height="148" rx="20" fill="#EDE6FB" stroke="#111" stroke-width="3"/>
+  <text x="990" y="178" text-anchor="middle" font-size="18" font-weight="bold" fill="#1c1030">regress</text>
+  <circle cx="934" cy="246" r="12" fill="none" stroke="#8B5CF6" stroke-width="2" stroke-dasharray="3 2"/>
+  <text x="934" y="278" text-anchor="middle" font-size="12" fill="#888" font-style="italic">&#227;</text>
+  <path d="M948,244 C974,234 994,236 1020,242" fill="none" stroke="#7C4DD6" stroke-width="4" stroke-dasharray="6 3" marker-end="url(#ahp)"/>
+  <circle cx="1034" cy="246" r="12" fill="#8B5CF6" stroke="#111" stroke-width="2.5"/>
+  <g stroke="#111" stroke-width="2.5"><path d="M1028,232 l12,12 M1040,232 l-12,12"/></g>
+  <text x="990" y="288" text-anchor="middle" font-size="12" fill="#4a238f">pull onto drift target (sg)</text>
+
+  <!-- ===================== DEPLOY (medoid -> env) ===================== -->
+  <path d="M1070,222 L1106,222" fill="none" stroke="#111" stroke-width="3" marker-end="url(#ah)"/>
+  <rect x="1108" y="148" width="204" height="148" rx="20" fill="#E8E8E8" stroke="#111" stroke-width="3"/>
+  <text x="1170" y="178" text-anchor="middle" font-size="18" font-weight="bold">deploy</text>
+  <circle cx="1144" cy="226" r="8" fill="#C3ABF0" stroke="#7a63b0" stroke-width="1.5"/>
+  <circle cx="1178" cy="212" r="8" fill="#C3ABF0" stroke="#7a63b0" stroke-width="1.5"/>
+  <circle cx="1182" cy="250" r="8" fill="#C3ABF0" stroke="#7a63b0" stroke-width="1.5"/>
+  <circle cx="1140" cy="256" r="8" fill="#C3ABF0" stroke="#7a63b0" stroke-width="1.5"/>
+  <circle cx="1162" cy="234" r="12" fill="#8B5CF6" stroke="#111" stroke-width="3"/>
+  <circle cx="1162" cy="234" r="18" fill="none" stroke="#4a238f" stroke-width="2" stroke-dasharray="3 2"/>
+  <text x="1156" y="288" text-anchor="middle" font-size="12" fill="#4a238f">medoid = policy mode</text>
+  <path d="M1192,234 L1232,234" fill="none" stroke="#111" stroke-width="3" marker-end="url(#ah)"/>
+  <text x="1212" y="224" text-anchor="middle" font-size="11.5" fill="#333">act</text>
+  <rect x="1240" y="210" width="56" height="50" rx="8" fill="#ffffff" stroke="#555" stroke-width="2"/>
+  <circle cx="1282" cy="222" r="4" fill="#6a3cc0"/>
+  <circle cx="1250" cy="250" r="4" fill="#111"/>
+  <path d="M1250,250 Q1266,230 1280,223" fill="none" stroke="#999" stroke-width="1.6" stroke-dasharray="2 2"/>
+  <text x="1268" y="280" text-anchor="middle" font-size="12" fill="#555">env</text>
+
+  <!-- ===================== LEGEND (outside, bottom-left) ===================== -->
+  <rect x="34" y="392" width="316" height="176" rx="10" fill="#FBFAFE" stroke="#bbb" stroke-width="1.5"/>
+  <text x="48" y="418" font-size="15" font-weight="bold" fill="#111">net drift  V  =  attraction + ascent &#8722; repulsion</text>
+  <line x1="52" y1="444" x2="86" y2="444" stroke="#7C4DD6" stroke-width="4.5" marker-end="url(#ahps)"/><text x="96" y="449" font-size="13.5" fill="#333">attraction &#8594; value-selected data</text>
+  <line x1="52" y1="472" x2="86" y2="472" stroke="#4a238f" stroke-width="4" marker-end="url(#ahd)"/><text x="96" y="477" font-size="13.5" fill="#333">bounded ascent on &#8711;Q<tspan font-size="11" dy="2">lcb</tspan></text>
+  <line x1="52" y1="500" x2="86" y2="500" stroke="#E07A9B" stroke-width="3" stroke-dasharray="4 3" marker-end="url(#ahr)"/><text x="96" y="505" font-size="13.5" fill="#333">repulsion (keeps samples spread)</text>
+  <line x1="52" y1="528" x2="88" y2="528" stroke="#111" stroke-width="5.5" marker-end="url(#ahnet)"/><text x="96" y="533" font-size="13.5" fill="#111">net drift V &#8594; regression target sg(&#227;+&#951;V)</text>
+  <text x="48" y="556" font-size="12.5" fill="#7C4DD6">deploy: on-manifold medoid (no argmax-Q)</text>
+
+  <!-- ===================== CRITIC (bottom-right, big chart) ===================== -->
+  <rect x="900" y="330" width="412" height="238" rx="20" fill="#E8E8E8" stroke="#111" stroke-width="3"/>
+  <text x="1106" y="358" text-anchor="middle" font-size="18" font-weight="bold" fill="#111">IQL critic + CQL conservatism</text>
+  <line x1="956" y1="546" x2="1298" y2="546" stroke="#555" stroke-width="2"/>
+  <line x1="956" y1="546" x2="956" y2="384" stroke="#555" stroke-width="2"/>
+  <text x="1304" y="550" font-size="14" fill="#555">a</text>
+  <text x="948" y="392" text-anchor="end" font-size="14" fill="#555">Q</text>
+  <path d="M966,516 C1030,516 1068,398 1104,398 C1160,398 1210,452 1262,446 C1290,443 1300,486 1290,516" fill="none" stroke="#bbb" stroke-width="2.5" stroke-dasharray="6 4"/>
+  <path d="M966,528 C1030,528 1068,398 1104,398 C1170,398 1220,530 1290,536" fill="none" stroke="#7C4DD6" stroke-width="4"/>
+  <circle cx="1104" cy="398" r="9" fill="#6a3cc0" stroke="#3d1d78" stroke-width="1.5"/>
+  <path d="M1120,394 L1138,380" stroke="#4a238f" stroke-width="3" marker-end="url(#ahd)"/>
+  <text x="1142" y="378" font-size="14" fill="#4a238f" font-weight="bold">data &#8593;</text>
+  <path d="M1240,452 L1240,522" stroke="#E07A9B" stroke-width="3" stroke-dasharray="5 3" marker-end="url(#ahr)"/>
+  <circle cx="1240" cy="526" r="7" fill="#A78BFA" stroke="#111" stroke-width="1.5"/>
+  <text x="1252" y="452" font-size="14" fill="#c85a80" font-weight="bold">OOD &#227; &#8595;</text>
+  <text x="1106" y="561" text-anchor="middle" font-size="12" fill="#666" font-style="italic">CQL pushes OOD Q below data &#8658; drift stays in-support</text>
+
+  <!-- coupling: drift right edge <-> critic left edge -->
+  <path d="M900,360 L874,360" fill="none" stroke="#7C4DD6" stroke-width="2.8" stroke-dasharray="7 4" marker-end="url(#ahp)"/>
+  <text x="888" y="352" text-anchor="middle" font-size="11.5" fill="#7C4DD6">Q<tspan font-size="9" dy="2">lcb</tspan></text>
+  <path d="M874,406 L900,406" fill="none" stroke="#7C4DD6" stroke-width="2.8" stroke-dasharray="7 4" marker-end="url(#ahp)"/>
+  <text x="888" y="422" text-anchor="middle" font-size="11.5" fill="#7C4DD6">&#227; (OOD)</text>
+</svg>

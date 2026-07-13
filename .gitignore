@@ -21,3 +21,4 @@ run.sh
 run_supp.sh
 logs/
 external/
+assets/*.png

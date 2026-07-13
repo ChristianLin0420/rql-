@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 620" font-family="Georgia, 'Times New Roman', serif">
+  <defs>
+    <marker id="ah" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#111"/></marker>
+    <marker id="ahp" markerWidth="10" markerHeight="10" refX="6.5" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#7C4DD6"/></marker>
+    <marker id="ahd" markerWidth="9" markerHeight="9" refX="5.5" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#c0392b"/></marker>
+    <marker id="ahg" markerWidth="9" markerHeight="9" refX="5.5" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#1c7a4d"/></marker>
+    <radialGradient id="vbg" cx="72%" cy="24%" r="86%">
+      <stop offset="0%" stop-color="#C6A9F0"/><stop offset="42%" stop-color="#E6DCF7"/><stop offset="100%" stop-color="#F7F4FD"/>
+    </radialGradient>
+    <linearGradient id="flat" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#d9d9d9"/><stop offset="100%" stop-color="#cfcfcf"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="1280" height="620" fill="#ffffff"/>
+  <text x="640" y="34" text-anchor="middle" font-size="22" font-weight="bold" fill="#111">DQL v11: action-sharp critic &#8212; anchor the value at the action, contrast in-support vs OOD</text>
+
+  <!-- flow key -->
+  <line x1="360" y1="56" x2="394" y2="56" stroke="#111" stroke-width="3" marker-end="url(#ah)"/><text x="400" y="60" font-size="12.5" fill="#333">model flow</text>
+  <line x1="500" y1="56" x2="534" y2="56" stroke="#7C4DD6" stroke-width="2.6" stroke-dasharray="7 4" marker-end="url(#ahp)"/><text x="540" y="60" font-size="12.5" fill="#7C4DD6">data flow (from D)</text>
+  <circle cx="700" cy="56" r="6" fill="#6a3cc0"/><text x="712" y="60" font-size="12.5" fill="#4a238f">data action a</text>
+  <circle cx="820" cy="56" r="6" fill="#c0392b"/><text x="832" y="60" font-size="12.5" fill="#c0392b">random / OOD</text>
+  <circle cx="960" cy="56" r="6" fill="#1c7a4d"/><text x="972" y="60" font-size="12.5" fill="#1c7a4d">generator &#227;</text>
+
+  <!-- ===================== LEFT: the v10 defect ===================== -->
+  <rect x="34" y="92" width="360" height="300" rx="16" fill="#F4F4F4" stroke="#999" stroke-width="2"/>
+  <text x="214" y="118" text-anchor="middle" font-size="16" font-weight="bold" fill="#7a1f1f">v10 defect: interpolation &#8658; action-flat</text>
+  <text x="214" y="140" text-anchor="middle" font-size="12" fill="#555">train V(s, x&#8348;, &#964;) &#8594; y for random x at &#964;&lt;1;</text>
+  <text x="214" y="157" text-anchor="middle" font-size="12" fill="#555">target y is independent of x &#8658; V learns to ignore action</text>
+  <!-- axes -->
+  <line x1="80" y1="350" x2="360" y2="350" stroke="#111" stroke-width="1.6"/>
+  <line x1="80" y1="350" x2="80" y2="185" stroke="#111" stroke-width="1.6"/>
+  <text x="220" y="374" text-anchor="middle" font-size="12" fill="#333">action a</text>
+  <text x="64" y="270" text-anchor="middle" font-size="12" fill="#333" transform="rotate(-90 64 270)">V(s,a)</text>
+  <!-- flat value band -->
+  <rect x="82" y="262" width="276" height="16" fill="url(#flat)" stroke="#b0b0b0" stroke-width="1"/>
+  <text x="330" y="256" text-anchor="end" font-size="11.5" fill="#7a1f1f">flat in a</text>
+  <circle cx="150" cy="270" r="7" fill="#6a3cc0"/><circle cx="235" cy="270" r="6" fill="#c0392b"/><circle cx="300" cy="270" r="6" fill="#1c7a4d"/>
+  <text x="214" y="330" text-anchor="middle" font-size="12.5" fill="#7a1f1f" font-weight="bold">rank_acc &#8776; 0.55   ratio &#8776; 0.02   (measured)</text>
+  <text x="214" y="348" text-anchor="middle" font-size="11.5" fill="#7a1f1f">no gradient in a &#8658; policy stuck at 0.0</text>
+
+  <!-- big arrow to the fix -->
+  <path d="M400,240 L436,240" fill="none" stroke="#7C4DD6" stroke-width="4" marker-end="url(#ahp)"/>
+  <text x="418" y="230" text-anchor="middle" font-size="12" fill="#7C4DD6" font-weight="bold">fix</text>
+
+  <!-- ===================== RIGHT: v11 fix ===================== -->
+  <!-- Dataset -->
+  <rect x="452" y="150" width="104" height="96" rx="12" fill="#E8E8E8" stroke="#111" stroke-width="2.5"/>
+  <text x="504" y="196" text-anchor="middle" font-size="16" font-weight="bold" fill="#111">Dataset D</text>
+  <text x="504" y="216" text-anchor="middle" font-size="11.5" fill="#555">(s, a, r, s&#8242;)</text>
+
+  <!-- CRITIC: action-anchored Q with sharp landscape -->
+  <rect x="452" y="270" width="470" height="300" rx="18" fill="url(#vbg)" stroke="#111" stroke-width="3"/>
+  <text x="687" y="298" text-anchor="middle" font-size="17" font-weight="bold" fill="#111">Action-sharp critic  Q(s, a)</text>
+  <!-- value landscape (sharp) -->
+  <line x1="500" y1="530" x2="880" y2="530" stroke="#111" stroke-width="1.6"/>
+  <line x1="500" y1="530" x2="500" y2="330" stroke="#111" stroke-width="1.6"/>
+  <text x="690" y="552" text-anchor="middle" font-size="12" fill="#333">action a</text>
+  <text x="484" y="430" text-anchor="middle" font-size="12" fill="#333" transform="rotate(-90 484 430)">Q(s,a)</text>
+  <!-- sharp curve: peak at data action -->
+  <path d="M508,512 C580,505 630,360 700,356 C770,352 815,500 872,516" fill="none" stroke="#6a3cc0" stroke-width="3.5"/>
+  <!-- data action high -->
+  <circle cx="700" cy="356" r="9" fill="#6a3cc0" stroke="#3d1d78" stroke-width="2"/>
+  <text x="700" y="342" text-anchor="middle" font-size="11.5" fill="#4a238f" font-weight="bold">a (data): high</text>
+  <!-- OOD / random pushed down -->
+  <circle cx="590" cy="470" r="7" fill="#c0392b"/><circle cx="812" cy="486" r="7" fill="#c0392b"/>
+  <path d="M590,452 L590,392" stroke="#c0392b" stroke-width="2.4" stroke-dasharray="4 3" marker-end="url(#ahd)"/>
+  <text x="566" y="430" text-anchor="end" font-size="11" fill="#c0392b">push down</text>
+  <!-- generator sample, ascends the sharp Q -->
+  <circle cx="762" cy="430" r="8" fill="#1c7a4d"/>
+  <path d="M762,430 C740,405 720,375 698,360" fill="none" stroke="#1c7a4d" stroke-width="2.6" marker-end="url(#ahg)"/>
+  <text x="792" y="428" font-size="11" fill="#1c7a4d">&#227; ascends</text>
+  <!-- margin bracket -->
+  <path d="M636,356 L636,470" stroke="#4a238f" stroke-width="1.4"/>
+  <text x="628" y="416" text-anchor="end" font-size="11" fill="#4a238f">margin m</text>
+
+  <!-- badges -->
+  <g font-size="13">
+    <circle cx="946" cy="300" r="14" fill="#7C4DD6" stroke="#111" stroke-width="2"/><text x="946" y="305" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">1</text>
+    <text x="968" y="298" font-size="13.5" font-weight="bold" fill="#4a238f">IQL target: Q(s,a) &#8592; r + &#947;&#7495; V(s&#8242;)</text>
+    <text x="968" y="315" font-size="12" fill="#333">transition-specific &#8658; action-informative</text>
+
+    <circle cx="946" cy="356" r="14" fill="#7C4DD6" stroke="#111" stroke-width="2"/><text x="946" y="361" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">2</text>
+    <text x="968" y="354" font-size="13.5" font-weight="bold" fill="#4a238f">in-support contrast (bounded)</text>
+    <text x="968" y="371" font-size="12" fill="#333">relu( Q(s,a&#8315;) &#8722; Q(s,a) + m ) &#8658; rank_acc &#8594; 1</text>
+
+    <circle cx="946" cy="412" r="14" fill="#7C4DD6" stroke="#111" stroke-width="2"/><text x="946" y="417" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">3</text>
+    <text x="968" y="410" font-size="13.5" font-weight="bold" fill="#4a238f">noise-free state value V(s)</text>
+    <text x="968" y="427" font-size="12" fill="#333">own head; V &#8592; expectile&#7506;(Q) &#8212; no interpolation</text>
+
+    <circle cx="946" cy="468" r="14" fill="#7C4DD6" stroke="#111" stroke-width="2"/><text x="946" y="473" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">4</text>
+    <text x="968" y="466" font-size="13.5" font-weight="bold" fill="#4a238f">trust-region one-step drift (actor)</text>
+    <text x="968" y="483" font-size="12" fill="#333">generator &#960;&#952;: &#949;&#8594;&#227; ascends the now-sharp Q,</text>
+    <text x="968" y="499" font-size="12" fill="#333">held to top-M in-support data; deploy = medoid</text>
+  </g>
+
+  <!-- one-step generator block (model flow) -->
+  <rect x="968" y="520" width="276" height="40" rx="12" fill="#B79CEE" stroke="#111" stroke-width="2.5"/>
+  <text x="1106" y="545" text-anchor="middle" font-size="13.5" font-weight="bold" fill="#1c1030">one-step generator &#960;&#952;   (&#949; ~ N(0,I) &#8594; &#227;)</text>
+  <path d="M922,470 C944,486 950,506 966,520" fill="none" stroke="#111" stroke-width="2.4" marker-end="url(#ah)"/>
+  <text x="936" y="512" font-size="11" fill="#111">Q&#8594;&#960;</text>
+
+  <!-- data flow arrows -->
+  <path d="M556,206 C640,206 660,250 686,266" fill="none" stroke="#7C4DD6" stroke-width="2.6" stroke-dasharray="7 4" marker-end="url(#ahp)"/>
+  <text x="612" y="240" text-anchor="middle" font-size="11.5" fill="#7C4DD6">a, r, s&#8242;</text>
+
+  <text x="34" y="600" font-size="13.5" fill="#222">v11 = <tspan fill="#7C4DD6" font-weight="bold">action-anchored Q</tspan> (IQL target, no flat interpolation) + <tspan fill="#7C4DD6" font-weight="bold">bounded in-support contrast</tspan> (lifts rank_acc) + noise-free V(s) + trust-region drift. Gate: rank_acc&#8593; &amp; no decay.</text>
+</svg>

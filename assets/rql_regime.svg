@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 548" font-family="Georgia, 'Times New Roman', serif">
+  <defs>
+    <marker id="ah" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#111"/></marker>
+    <marker id="ahp" markerWidth="10" markerHeight="10" refX="6.5" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#7C4DD6"/></marker>
+    <marker id="ahnet" markerWidth="8.5" markerHeight="8.5" refX="5.5" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#111"/></marker>
+    <radialGradient id="vbg" cx="76%" cy="26%" r="82%">
+      <stop offset="0%" stop-color="#C6A9F0"/><stop offset="42%" stop-color="#E6DCF7"/><stop offset="100%" stop-color="#F7F4FD"/>
+    </radialGradient>
+  </defs>
+  <rect x="0" y="0" width="1280" height="548" fill="#ffffff"/>
+  <text x="640" y="34" text-anchor="middle" font-size="23" font-weight="bold" fill="#111">DQL in RQL&#8217;s regime: conservatism on the actor + value, not the critic</text>
+  <!-- flow-type key -->
+  <line x1="452" y1="58" x2="486" y2="58" stroke="#111" stroke-width="3" marker-end="url(#ah)"/><text x="492" y="62" font-size="12.5" fill="#333">model flow</text>
+  <line x1="602" y1="58" x2="636" y2="58" stroke="#7C4DD6" stroke-width="2.6" stroke-dasharray="7 4" marker-end="url(#ahp)"/><text x="642" y="62" font-size="12.5" fill="#7C4DD6">data flow (from D)</text>
+
+  <!-- ===== Dataset D ===== -->
+  <rect x="34" y="214" width="120" height="120" rx="14" fill="#E8E8E8" stroke="#111" stroke-width="2.5"/>
+  <text x="94" y="266" text-anchor="middle" font-size="19" font-weight="bold" fill="#111">Dataset D</text>
+  <text x="94" y="290" text-anchor="middle" font-size="12.5" fill="#555">{(s, a, r, s&#8242;)}</text>
+
+  <!-- ===== inputs + generator ===== -->
+  <circle cx="214" cy="150" r="22" fill="#EDE6FB" stroke="#111" stroke-width="2.5"/>
+  <text x="214" y="157" text-anchor="middle" font-size="18" font-style="italic">&#949;</text>
+  <text x="214" y="122" text-anchor="middle" font-size="13" fill="#444">&#949; ~ N(0,I)</text>
+  <rect x="256" y="150" width="170" height="140" rx="18" fill="#B79CEE" stroke="#111" stroke-width="3"/>
+  <text x="341" y="212" text-anchor="middle" font-size="26" font-style="italic" font-weight="bold" fill="#1c1030">&#960;&#952;</text>
+  <text x="341" y="242" text-anchor="middle" font-size="14" fill="#241338">one-step generator</text>
+  <path d="M236,152 C246,152 250,168 254,175" fill="none" stroke="#111" stroke-width="2.5" marker-end="url(#ah)"/>
+  <!-- data flow: D -> generator (state s) -->
+  <path d="M154,244 C200,244 214,224 254,218" fill="none" stroke="#7C4DD6" stroke-width="2.6" stroke-dasharray="7 4" marker-end="url(#ahp)"/>
+  <text x="200" y="210" text-anchor="middle" font-size="12" fill="#7C4DD6">s</text>
+
+  <!-- ===== DRIFT (actor) with trust-region badge ===== -->
+  <rect x="470" y="86" width="392" height="286" rx="20" fill="url(#vbg)" stroke="#111" stroke-width="3"/>
+  <text x="666" y="114" text-anchor="middle" font-size="17" font-weight="bold" fill="#111">Constrained drift (actor)</text>
+  <!-- high-value region + data actions (attraction targets from D) -->
+  <circle cx="770" cy="180" r="12" fill="#6a3cc0" stroke="#3d1d78" stroke-width="2"/>
+  <circle cx="720" cy="150" r="8" fill="#CFC2EC" stroke="#8a76bf" stroke-width="1.4"/>
+  <circle cx="800" cy="300" r="8" fill="#CFC2EC" stroke="#8a76bf" stroke-width="1.4"/>
+  <text x="770" y="150" text-anchor="middle" font-size="11.5" fill="#4a238f" font-weight="bold">value-sel. data</text>
+  <!-- generator samples + net drift toward data (trust region) -->
+  <circle cx="560" cy="270" r="11" fill="#A78BFA" stroke="#111" stroke-width="2"/>
+  <circle cx="620" cy="300" r="11" fill="#A78BFA" stroke="#111" stroke-width="2"/>
+  <circle cx="560" cy="230" r="15" fill="#8B5CF6" stroke="#111" stroke-width="3"/>
+  <text x="560" y="234" text-anchor="middle" font-size="12" font-style="italic" fill="#fff">&#227;</text>
+  <path d="M574,222 L742,190" fill="none" stroke="#111" stroke-width="5" marker-end="url(#ahnet)"/>
+  <text x="628" y="200" font-size="12.5" fill="#111">drift &#8594; in-support</text>
+  <!-- badge (1) trust region -->
+  <circle cx="500" cy="122" r="15" fill="#7C4DD6" stroke="#111" stroke-width="2"/>
+  <text x="500" y="128" text-anchor="middle" font-size="15" font-weight="bold" fill="#fff">1</text>
+  <text x="522" y="128" font-size="13.5" font-weight="bold" fill="#4a238f">trust region: attraction to data (like RQL &#945;)</text>
+  <!-- data flow: D -> drift (behavior actions a) -->
+  <path d="M120,334 C120,420 380,430 430,360 C450,332 456,300 468,272" fill="none" stroke="#7C4DD6" stroke-width="2.6" stroke-dasharray="7 4" marker-end="url(#ahp)"/>
+  <text x="300" y="426" text-anchor="middle" font-size="12" fill="#7C4DD6">behavior actions a &#8594; attraction targets</text>
+
+  <!-- ===== DEPLOY ===== -->
+  <path d="M862,200 L900,200" fill="none" stroke="#111" stroke-width="3" marker-end="url(#ah)"/>
+  <rect x="902" y="146" width="150" height="118" rx="18" fill="#E8E8E8" stroke="#111" stroke-width="3"/>
+  <text x="977" y="188" text-anchor="middle" font-size="17" font-weight="bold">deploy</text>
+  <circle cx="960" cy="228" r="7" fill="#C3ABF0" stroke="#7a63b0" stroke-width="1.4"/>
+  <circle cx="994" cy="220" r="7" fill="#C3ABF0" stroke="#7a63b0" stroke-width="1.4"/>
+  <circle cx="977" cy="234" r="10" fill="#8B5CF6" stroke="#111" stroke-width="2.5"/>
+  <circle cx="977" cy="234" r="15" fill="none" stroke="#4a238f" stroke-width="1.8" stroke-dasharray="3 2"/>
+  <text x="977" y="256" text-anchor="middle" font-size="11.5" fill="#4a238f">medoid</text>
+
+  <!-- ===== CRITIC (behavior value) with badge (2) ===== -->
+  <rect x="470" y="402" width="582" height="118" rx="18" fill="#E8E8E8" stroke="#111" stroke-width="3"/>
+  <text x="761" y="430" text-anchor="middle" font-size="17" font-weight="bold" fill="#111">IQL critic</text>
+  <circle cx="512" cy="430" r="15" fill="#7C4DD6" stroke="#111" stroke-width="2"/>
+  <text x="512" y="436" text-anchor="middle" font-size="15" font-weight="bold" fill="#fff">2</text>
+  <text x="640" y="462" text-anchor="middle" font-size="15" fill="#111">behavior value: V &#8592; expectile-0.5(Q)  &#8594;  no max-operator overestimation</text>
+  <text x="640" y="490" text-anchor="middle" font-size="13.5" fill="#555">Q &#8592; r + &#947;&#7495; V(s&#8242;)   +   light margin-CQL safety net (bounded m&#183;|Q|)</text>
+  <!-- data flow: D -> critic (transitions) -->
+  <path d="M108,334 C108,470 300,478 468,472" fill="none" stroke="#7C4DD6" stroke-width="2.6" stroke-dasharray="7 4" marker-end="url(#ahp)"/>
+  <text x="286" y="490" text-anchor="middle" font-size="12" fill="#7C4DD6">transitions (s,a,r,s&#8242;)</text>
+
+  <!-- coupling: gen samples -> critic (CQL neg); Q -> drift -->
+  <path d="M540,374 L540,400" fill="none" stroke="#7C4DD6" stroke-width="2.6" stroke-dasharray="6 3" marker-end="url(#ahp)"/>
+  <text x="524" y="392" text-anchor="end" font-size="11.5" fill="#7C4DD6">&#227; (CQL neg)</text>
+  <path d="M720,400 L720,374" fill="none" stroke="#7C4DD6" stroke-width="2.6" stroke-dasharray="6 3" marker-end="url(#ahp)"/>
+  <text x="730" y="392" font-size="11.5" fill="#7C4DD6">Q &#8594; selection</text>
+
+  <text x="34" y="536" font-size="13.5" fill="#222">Conservatism = <tspan fill="#7C4DD6" font-weight="bold">(1) actor trust region</tspan> (stay in-support) + <tspan fill="#7C4DD6" font-weight="bold">(2) behavior value</tspan> (expectile 0.5, nothing to overestimate) &#8212; CQL is only a light net.</text>
+</svg>
