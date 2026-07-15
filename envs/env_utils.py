@@ -1,4 +1,5 @@
 import collections
+import os
 import re
 import time
 
@@ -116,8 +117,10 @@ def make_env_and_datasets(
     agent_config=None,
 ):
     if 'singletask' in env_name:
-        # OGBench.
-        env, train_dataset, val_dataset = ogbench.make_env_and_datasets(env_name)
+        # OGBench. ogbench itself ignores OGBENCH_DATASET_DIR, so pass it through
+        # (compute nodes have no internet -- datasets must come from the staged dir).
+        dataset_dir = os.environ.get('OGBENCH_DATASET_DIR', '~/.ogbench/data')
+        env, train_dataset, val_dataset = ogbench.make_env_and_datasets(env_name, dataset_dir=dataset_dir)
         eval_env = ogbench.make_env_and_datasets(env_name, env_only=True)
         env = EpisodeMonitor(env, filter_regexes=['.*privileged.*', '.*proprio.*'])
         eval_env = EpisodeMonitor(eval_env, filter_regexes=['.*privileged.*', '.*proprio.*'])

@@ -7,7 +7,7 @@ import random
 import time
 import copy
 
-import glob, tqdm, wandb, os, json, random, time, jax
+import glob, re, tqdm, wandb, os, json, random, time, jax
 import numpy as np
 from absl import app, flags
 from ml_collections import config_flags
@@ -43,6 +43,8 @@ flags.DEFINE_bool('sparse', False, "make the task sparse reward")
 flags.DEFINE_float('p_aug', None, 'Probability of applying image augmentation.')
 flags.DEFINE_integer('frame_stack', None, 'Number of frames to stack.')
 flags.DEFINE_integer('utd', 1, 'UTD.')
+flags.DEFINE_string('run_name', None, 'Deterministic experiment name (replaces the jobid/timestamp one, so requeued jobs map to the same save_dir).')
+flags.DEFINE_bool('auto_resume', False, 'Restore the latest params_*.pkl in save_dir, continue from that step, and resume the same wandb run.')
 
 config_flags.DEFINE_config_file('agent', 'agents/rql.py', lock_config=False)
 
@@ -60,6 +62,11 @@ def main(_):
         if _g(k) is not None:
             parts.append(f"{k}{_g(k)}")
     exp_name = "__".join(parts[:2]) + "__" + "_".join(parts[2:]) + f"__{get_exp_name(FLAGS.seed)}"
+    if FLAGS.run_name is not None:
+        exp_name = FLAGS.run_name
+        if FLAGS.auto_resume:
+            os.environ.setdefault('WANDB_RUN_ID', re.sub(r'[^a-zA-Z0-9_.-]', '-', exp_name)[:100])
+            os.environ.setdefault('WANDB_RESUME', 'allow')
     wandb_project = os.environ.get('WANDB_PROJECT', 'rql-iclr2027-kernel-analysis')
     setup_wandb(project=wandb_project, group=FLAGS.run_group, name=exp_name)
     
@@ -129,6 +136,17 @@ def main(_):
     
     print("replay buffer size:", replay_buffer.size)
 
+    start_step = 0
+    if FLAGS.auto_resume:
+        ckpt_steps = sorted(
+            int(os.path.basename(p)[len('params_'):-len('.pkl')])
+            for p in glob.glob(os.path.join(FLAGS.save_dir, 'params_*.pkl'))
+        )
+        if ckpt_steps:
+            start_step = ckpt_steps[-1]
+            agent = restore_agent(agent, FLAGS.save_dir, start_step)
+            print(f"auto_resume: continuing from step {start_step}")
+
     # Train agent.
     train_logger = CsvLogger(os.path.join(FLAGS.save_dir, 'train.csv'))
     eval_logger = CsvLogger(os.path.join(FLAGS.save_dir, 'eval.csv'))
@@ -141,7 +159,7 @@ def main(_):
 
     eps_dataset, eps = defaultdict(list), []
 
-    for i in tqdm.tqdm(range(1, FLAGS.offline_steps + FLAGS.online_steps + 1), smoothing=0.1, dynamic_ncols=True):
+    for i in tqdm.tqdm(range(start_step + 1, FLAGS.offline_steps + FLAGS.online_steps + 1), smoothing=0.1, dynamic_ncols=True):
         if i <= FLAGS.offline_steps:
             if FLAGS.ogbench_dataset_dir is not None and FLAGS.dataset_replace_interval != 0 and i % FLAGS.dataset_replace_interval == 0:
                 dataset_idx = (dataset_idx + 1) % len(dataset_paths)
@@ -242,7 +260,7 @@ def main(_):
             eval_logger.log(eval_metrics, step=i)
 
         # Save agent.
-        if FLAGS.save_interval != 0 and i % FLAGS.save_interval == 0 and i >= FLAGS.save_interval:
+        if FLAGS.save_interval != 0 and (i % FLAGS.save_interval == 0 or i == FLAGS.offline_steps + FLAGS.online_steps) and i >= FLAGS.save_interval:
             save_agent(agent, FLAGS.save_dir, i)
 
     train_logger.close()

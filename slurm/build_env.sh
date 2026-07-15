@@ -4,6 +4,7 @@
 # Assumes conda is installed. Override CONDA_ENV / OGBENCH_DATASET_DIR as needed.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+export PYTHONNOUSERSITE=1   # keep ~/.local out of resolution -- it shadows env packages
 
 CONDA_ENV=${CONDA_ENV:-rql}
 PY=${PY:-3.11}

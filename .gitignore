@@ -22,3 +22,9 @@ run_supp.sh
 logs/
 external/
 assets/*.png
+
+# large / generated / secret (drift-line kit)
+data/
+sbatch/jobs/
+sbatch/jobs-sweep/
+sbatch/.wandb_key

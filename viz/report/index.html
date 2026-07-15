@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Drift line · 50-task OGBench research dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  /* ---- theme: white surface, NVIDIA-green anchor, validated categorical palette ---- */
+  :root{
+    --nv:#76B900; --s1:#76B900; --s2:#3B7BBF; --s3:#C87A2E; --s4:#B04A73;
+    --ink:#1a1a1a; --ink2:#555; --ink3:#8a8a8a; --line:#e8e8e6; --grid:#efefed;
+    --surface:#ffffff; --card:#ffffff; --chip:#f4f6f0;
+    --good:#3d8b37; --warn:#b58a00; --crit:#c0392b;
+  }
+  *{box-sizing:border-box} body{margin:0;background:var(--surface);color:var(--ink);
+    font:14px/1.5 -apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px 80px}
+  header{border-bottom:1px solid var(--line);padding:26px 0 18px;margin-bottom:26px}
+  header .bar{height:4px;background:var(--nv);width:64px;border-radius:2px;margin-bottom:14px}
+  h1{font-size:21px;margin:0 0 4px;font-weight:650}
+  .sub{color:var(--ink2);font-size:13px}
+  .chips{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+  .chip{background:var(--chip);border:1px solid var(--line);border-radius:20px;
+    padding:3px 12px;font-size:12px;color:var(--ink2)}
+  .chip b{color:var(--ink)}
+  h2{font-size:15px;font-weight:650;margin:0}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:18px 20px;margin-bottom:22px}
+  .card .head{display:flex;justify-content:space-between;align-items:baseline;
+    gap:12px;margin-bottom:4px;flex-wrap:wrap}
+  .note{color:var(--ink2);font-size:12.5px;margin:2px 0 12px}
+  /* stat tiles */
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:22px}
+  .tile{border:1px solid var(--line);border-radius:10px;padding:14px 16px;background:var(--card)}
+  .tile .k{font-size:12px;color:var(--ink2);margin-bottom:2px}
+  .tile .v{font-size:26px;font-weight:680;letter-spacing:-.5px}
+  .tile .d{font-size:12px;color:var(--ink3)}
+  .tile.accent{border-top:3px solid var(--nv)}
+  /* legend */
+  .legend{display:flex;gap:14px;font-size:12px;color:var(--ink2);flex-wrap:wrap}
+  .legend .sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+  /* figure roadmap cards: one card per row so figures render full-width */
+  .figs{display:flex;flex-direction:column;gap:18px}
+  .fig{border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+  .fig h3{font-size:14px;margin:0 0 6px;font-weight:640}
+  .fig .media{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px}
+  .fig .media img,.fig .media video{flex:1 1 460px;min-width:300px;max-width:100%;
+    height:auto;object-fit:contain;border-radius:6px;border:1px solid var(--line)}
+  .badge{font-size:10.5px;border-radius:10px;padding:2px 9px;font-weight:600;
+    vertical-align:2px;margin-left:6px;white-space:nowrap}
+  .badge.pending{background:#f5f0e0;color:var(--warn)}
+  .badge.ready{background:#ecf5e2;color:var(--good)}
+  .badge.live{background:#e8f0fa;color:var(--s2)}
+  .fig .claim{font-size:12.5px;color:var(--ink)}
+  .fig .why{font-size:12px;color:var(--ink2);margin-top:6px}
+  .fig .regen{font-size:11px;color:var(--ink3);margin-top:8px;font-family:ui-monospace,Menlo,monospace;
+    background:#fafaf8;border:1px solid var(--grid);border-radius:6px;padding:5px 8px;overflow-x:auto;white-space:nowrap}
+  /* table */
+  table{border-collapse:collapse;width:100%;font-size:12.5px}
+  th{color:var(--ink2);font-weight:600;text-align:left;border-bottom:1px solid var(--line);padding:6px 8px}
+  td{padding:5px 8px;border-bottom:1px solid var(--grid)}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  tr.cat td{background:#fafaf8;font-weight:640}
+  .pos{color:var(--good)} .neg{color:var(--crit)}
+  details summary{cursor:pointer;color:var(--ink2);font-size:13px;margin-bottom:10px}
+  /* tooltip */
+  #tip{position:fixed;pointer-events:none;background:var(--ink);color:#fff;font-size:12px;
+    border-radius:6px;padding:6px 10px;opacity:0;transition:opacity .08s;z-index:10;max-width:300px}
+  #tip b{color:#c9e89a}
+  svg text{font-family:inherit}
+  footer{color:var(--ink3);font-size:12px;border-top:1px solid var(--line);padding-top:14px}
+  code{background:#f6f6f4;border-radius:4px;padding:1px 5px;font-size:12px}
+</style>
+</head>
+<body data-palette="#76B900,#3B7BBF,#C87A2E,#B04A73">
+<div class="wrap">
+  <header>
+    <div class="bar"></div>
+    <h1>Drift line — 50-task OGBench research dashboard</h1>
+    <div class="sub">Multi-positive, state-local, advantage-tilted drifting vs RQL / DriftQL ·
+      generated <span id="gen"></span> · rebuild: <code>python viz/build_data.py</code></div>
+    <div class="chips" id="chips"></div>
+  </header>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="card">
+    <div class="head"><h2>Benchmark — category success vs RQL (appendix Table 1)</h2>
+      <div class="legend" id="benchLegend"></div></div>
+    <div class="note">Success % at 1M steps, mean of last 3 evals, completed seeds only.
+      RQL trains 2M steps; puzzle-4x4 / cube-quadruple RQL rows use 100M-transition datasets (ours: standard v0).</div>
+    <div id="benchChart"></div>
+  </div>
+
+  <div class="card">
+    <div class="head"><h2>Diagnostics — critic health &amp; action borrowing (all 50 tasks, seed 0)</h2>
+      <div class="legend" id="diagLegend"></div></div>
+    <div class="note">Left (F7): critic ranking accuracy vs task success — bottom-right points are
+      “healthy critic, zero success”: extraction, not evaluation, is the bottleneck.
+      Right (F2): attraction self-weight <code>w_self</code> vs success — low w_self = policy borrows
+      neighboring states' actions (the multi-positive mechanism). Hover any point for the task.</div>
+    <div style="display:flex;gap:28px;flex-wrap:wrap" id="diagCharts"></div>
+  </div>
+
+  <div class="card">
+    <div class="head"><h2>Paper-figure roadmap</h2></div>
+    <div class="note">Each card is one planned paper figure. Drop generated artifacts into
+      <code>viz/figs/&lt;id&gt;_*.png|svg|gif|mp4</code> and rerun the build — they appear here automatically.</div>
+    <div class="figs" id="figCards"></div>
+  </div>
+
+  <div class="card">
+    <div class="head"><h2>Per-task table</h2></div>
+    <details open><summary>toggle table</summary><div id="taskTable"></div></details>
+  </div>
+
+  <footer>
+    Theme: white surface, NVIDIA-green anchored categorical palette
+    <code>#76B900 #3B7BBF #C87A2E #B04A73</code> (validated: lightness band, chroma, CVD separation;
+    green's low surface-contrast is relieved by direct labels + this table view).
+    Extend: add a variant or figure entry in <code>viz/build_data.py</code>.
+  </footer>
+</div>
+<div id="tip"></div>
+
+<script src="data.js"></script>
+<script>
+const D = window.REPORT_DATA, PAL = ["#76B900","#3B7BBF","#C87A2E","#B04A73"];
+const DOMAINS = ["antmaze","humanoid","scene/puzzle","cube"];
+const $ = (s)=>document.querySelector(s), esc=(t)=>String(t).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const tip = $("#tip");
+function showTip(e,html){tip.innerHTML=html;tip.style.opacity=1;
+  tip.style.left=Math.min(e.clientX+14,innerWidth-320)+"px";tip.style.top=(e.clientY+12)+"px";}
+function hideTip(){tip.style.opacity=0;}
+
+/* ---------- header chips + tiles ---------- */
+$("#gen").textContent = D.generated;
+const q = D.queue, chips = [];
+if(q.running!=null) chips.push(`<span class="chip">cluster: <b>${q.running}</b> running · <b>${q.pending}</b> pending</span>`);
+D.variants.forEach(v=>chips.push(`<span class="chip">${v.label}: <b>${v.done}</b>/150 seeds done</span>`));
+$("#chips").innerHTML = chips.join("");
+
+const best = [...D.variants].filter(v=>v.overall!=null).sort((a,b)=>b.overall-a.overall)[0];
+$("#tiles").innerHTML = `
+  <div class="tile accent"><div class="k">${best?best.label:"ours"} · overall</div>
+    <div class="v">${best&&best.overall!=null?best.overall:"—"}</div><div class="d">mean over category means</div></div>
+  <div class="tile"><div class="k">RQL · overall</div><div class="v">${D.rql_overall}</div>
+    <div class="d">paper, 2M steps</div></div>
+  <div class="tile"><div class="k">gap to RQL</div>
+    <div class="v">${best&&best.overall!=null?(best.overall-D.rql_overall).toFixed(1):"—"}</div>
+    <div class="d">${best?best.label:""} − RQL</div></div>
+  <div class="tile"><div class="k">runs finished</div>
+    <div class="v">${D.variants.reduce((s,v)=>s+v.done,0)}</div><div class="d">of ${150*D.variants.length} (all variants)</div></div>`;
+
+/* ---------- grouped horizontal bar: categories × (variants…, RQL) ---------- */
+(function bench(){
+  const cats = Object.keys(D.rql_cats);
+  const series = D.variants.filter(v=>v.overall!=null).map((v,i)=>({label:v.label,color:PAL[i===0?0:2],get:c=>v.categories[c]}))
+    .concat([{label:"RQL",color:PAL[1],get:c=>D.rql_cats[c]}]);
+  $("#benchLegend").innerHTML = series.map(s=>`<span><span class="sw" style="background:${s.color}"></span>${s.label}</span>`).join("");
+  const bh=13, gap=2, groupPad=14, left=210, right=56, W=1120;
+  const gh = series.length*(bh+gap)+groupPad, H = cats.length*gh+10;
+  const x = v=>left+(W-left-right)*v/100;
+  let g=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px">`;
+  for(const t of [0,25,50,75,100])
+    g+=`<line x1="${x(t)}" y1="0" x2="${x(t)}" y2="${H-14}" stroke="var(--grid)"/>
+        <text x="${x(t)}" y="${H-2}" font-size="11" fill="#8a8a8a" text-anchor="middle">${t}</text>`;
+  cats.forEach((c,ci)=>{
+    const y0=ci*gh;
+    g+=`<text x="${left-10}" y="${y0+gh/2-2}" font-size="12" fill="#555" text-anchor="end">${c}</text>`;
+    series.forEach((s,si)=>{
+      const v=s.get(c), y=y0+si*(bh+gap);
+      if(v==null){g+=`<text x="${x(0)+4}" y="${y+bh-3}" font-size="10" fill="#bbb">pending</text>`;return;}
+      const w=Math.max(x(v)-x(0),2);
+      g+=`<path d="M${x(0)},${y} h${w-4} a4,4 0 0 1 4,4 v${bh-8} a4,4 0 0 1 -4,4 h-${w-4} z"
+            fill="${s.color}" class="hov" data-tip="<b>${esc(c)}</b><br>${s.label}: ${v}"/>`;
+      g+=`<text x="${x(v)+5}" y="${y+bh-3}" font-size="10.5" fill="#333">${v}</text>`;
+    });
+  });
+  $("#benchChart").innerHTML=g+"</svg>";
+})();
+
+/* ---------- diagnostics scatters ---------- */
+function scatter(title, xs, xlabel, xmax){
+  const W=470,H=330,l=46,b=34,t=14,r=10;
+  const tasks = D.variants[0].tasks.filter(tk=>tk[xs]!=null&&tk.ours!=null);
+  const X=v=>l+(W-l-r)*Math.min(v,xmax)/xmax, Y=v=>t+(H-t-b)*(1-v/100);
+  let g=`<div><div style="font-size:12.5px;color:#555;margin-bottom:4px">${title}</div>
+    <svg viewBox="0 0 ${W} ${H}" width="${W}">`;
+  for(const p of [0,25,50,75,100])
+    g+=`<line x1="${l}" y1="${Y(p)}" x2="${W-r}" y2="${Y(p)}" stroke="var(--grid)"/>
+        <text x="${l-6}" y="${Y(p)+4}" font-size="10.5" fill="#8a8a8a" text-anchor="end">${p}</text>`;
+  for(const p of [0,.25,.5,.75,1].map(f=>f*xmax))
+    g+=`<text x="${X(p)}" y="${H-14}" font-size="10.5" fill="#8a8a8a" text-anchor="middle">${(+p.toFixed(2))}</text>`;
+  g+=`<text x="${(l+W-r)/2}" y="${H-1}" font-size="11" fill="#555" text-anchor="middle">${xlabel}</text>
+      <text x="12" y="${(t+H-b)/2}" font-size="11" fill="#555" transform="rotate(-90 12 ${(t+H-b)/2})" text-anchor="middle">success %</text>`;
+  tasks.forEach(tk=>{
+    g+=`<circle cx="${X(tk[xs])}" cy="${Y(tk.ours)}" r="5" fill="${PAL[DOMAINS.indexOf(tk.domain)]}"
+      stroke="#fff" stroke-width="2" class="hov"
+      data-tip="<b>${esc(tk.env.replace('-singletask','').replace('-v0',''))}</b><br>${xlabel}: ${(+tk[xs]).toFixed(3)} · success: ${tk.ours}"/>`;
+  });
+  return g+"</svg></div>";
+}
+$("#diagLegend").innerHTML = DOMAINS.map((d,i)=>`<span><span class="sw" style="background:${PAL[i]}"></span>${d}</span>`).join("");
+$("#diagCharts").innerHTML =
+  scatter("F7 · critic ranking accuracy vs success","rank_acc","rank_acc (final)",1) +
+  scatter("F2 · attraction self-weight vs success","w_self","w_self (final)",Math.max(...D.variants[0].tasks.map(t=>t.w_self||0),0.3));
+
+/* ---------- figure roadmap cards ---------- */
+$("#figCards").innerHTML = D.figures.map(f=>{
+  const live = f.id==="f7"||f.id==="f2";
+  const badge = f.media.length? `<span class="badge ready">artifact</span>`
+    : live? `<span class="badge live">live above</span>` : `<span class="badge pending">pending</span>`;
+  const media = f.media.length ? `<div class="media">` + f.media.map(m=>/\.(mp4|webm)$/.test(m)
+    ? `<video src="${m}" controls loop muted></video>` : `<img src="${m}" loading="lazy">`).join("") + `</div>` : "";
+  return `<div class="fig"><h3>${f.title}${badge}</h3>
+    <div class="claim">${f.claim}</div><div class="why">${f.why}</div>
+    <div class="regen">${esc(f.regen)}</div>${media}</div>`;
+}).join("");
+
+/* ---------- per-task table ---------- */
+(function table(){
+  const vs = D.variants.filter(v=>v.tasks.some(t=>t.ours!=null));
+  let h=`<table><tr><th>task</th>${vs.map(v=>`<th class="num">${v.label}</th>`).join("")}
+    <th class="num">RQL</th><th class="num">Δ best</th><th class="num">rank_acc</th><th class="num">w_self</th></tr>`;
+  let cat="";
+  D.variants[0].tasks.forEach((t,i)=>{
+    if(t.cat!==cat){cat=t.cat;
+      h+=`<tr class="cat"><td>${cat}</td>${vs.map(v=>`<td class="num">${v.categories[cat]??"—"}</td>`).join("")}
+        <td class="num">${D.rql_cats[cat]}</td><td colspan="3"></td></tr>`;}
+    const vals=vs.map(v=>v.tasks[i].ours), bestv=Math.max(...vals.filter(v=>v!=null),-1);
+    const d=bestv>=0? bestv-t.rql : null;
+    h+=`<tr><td style="padding-left:22px">task${t.task}</td>
+      ${vals.map(v=>`<td class="num">${v??"—"}</td>`).join("")}
+      <td class="num">${t.rql}</td>
+      <td class="num ${d==null?"":d>=0?"pos":"neg"}">${d==null?"—":(d>0?"+":"")+d.toFixed(0)}</td>
+      <td class="num">${t.rank_acc?.toFixed(2)??"—"}</td><td class="num">${t.w_self?.toFixed(3)??"—"}</td></tr>`;
+  });
+  $("#taskTable").innerHTML=h+"</table>";
+})();
+
+/* ---------- hover layer ---------- */
+document.addEventListener("mousemove",e=>{
+  const el=e.target.closest(".hov");
+  el? showTip(e,el.dataset.tip) : hideTip();
+});
+</script>
+</body>
+</html>
