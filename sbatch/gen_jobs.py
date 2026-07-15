@@ -19,8 +19,9 @@ GROUP_PREFIX = os.environ.get("GROUP_PREFIX", "DQL111-50")
 
 TEMPLATE = """#!/bin/bash
 #SBATCH --account=edgeai_tao-ptm_image-foundation-model-clip
-#SBATCH --partition=polar4,polar3,polar,grizzly
-# (batch_block1-3 excluded: this account is rejected there, which holds the whole job in PartitionConfig)
+#SBATCH --partition=batch,backfill
+# (batch: 4h cap, no preemption; backfill: 7d cap, PreemptMode=REQUEUE -- fine, every run
+#  auto-resumes from its checkpoint. batch_long/batch_large reject this account's jobs.)
 #SBATCH --time=4:00:00
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1

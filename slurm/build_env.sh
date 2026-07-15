@@ -17,10 +17,11 @@ if ! conda env list | grep -qE "^${CONDA_ENV}\b"; then
 fi
 conda activate "${CONDA_ENV}"
 echo "[build] installing requirements + JAX(CUDA) for A100"
-pip install -r requirements.txt
+# python -m pip, not bare pip: ~/.local/bin precedes the env in PATH and carries a py3.10 pip
+python -m pip install -r requirements.txt
 # GPU JAX matched to this repo (jax 0.10.x). Adjust CUDA wheel to the cluster's CUDA if needed.
-pip install --upgrade "jax[cuda12]==0.10.2" || echo "[build] set the jax cuda wheel to your cluster CUDA"
-pip install ogbench
+python -m pip install --upgrade "jax[cuda12]==0.10.2" || echo "[build] set the jax cuda wheel to your cluster CUDA"
+python -m pip install ogbench
 
 # 2) sanity: imports + GPU visible -------------------------------------------
 python - <<'PY'

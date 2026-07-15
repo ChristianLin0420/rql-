@@ -21,15 +21,18 @@ class CsvLogger:
     def log(self, row, step):
         row['step'] = step
         if self.file is None:
-            self.file = open(self.path, 'w')
-            if self.header is None:
+            # Append across auto-resume windows -- 'w' would wipe the metrics
+            # accumulated by every previous 4h window of the same run.
+            if os.path.exists(self.path) and os.path.getsize(self.path) > 0:
+                with open(self.path) as f:
+                    self.header = f.readline().rstrip('\n').split(',')
+                self.file = open(self.path, 'a')
+            else:
+                self.file = open(self.path, 'w')
                 self.header = [k for k, v in row.items() if not isinstance(v, self.disallowed_types)]
                 self.file.write(','.join(self.header) + '\n')
-            filtered_row = {k: v for k, v in row.items() if not isinstance(v, self.disallowed_types)}
-            self.file.write(','.join([str(filtered_row.get(k, '')) for k in self.header]) + '\n')
-        else:
-            filtered_row = {k: v for k, v in row.items() if not isinstance(v, self.disallowed_types)}
-            self.file.write(','.join([str(filtered_row.get(k, '')) for k in self.header]) + '\n')
+        filtered_row = {k: v for k, v in row.items() if not isinstance(v, self.disallowed_types)}
+        self.file.write(','.join([str(filtered_row.get(k, '')) for k in self.header]) + '\n')
         self.file.flush()
 
     def close(self):

@@ -172,8 +172,12 @@ def save_agent(agent, save_dir, epoch):
         agent=flax.serialization.to_state_dict(agent),
     )
     save_path = os.path.join(save_dir, f'params_{epoch}.pkl')
-    with open(save_path, 'wb') as f:
+    # Atomic write: the 4h-window timeout can SIGTERM mid-dump, and a truncated
+    # params_*.pkl would poison (or falsely complete) every subsequent auto-resume.
+    tmp_path = os.path.join(save_dir, f'.params_{epoch}.pkl.tmp')
+    with open(tmp_path, 'wb') as f:
         pickle.dump(save_dict, f)
+    os.replace(tmp_path, save_path)
 
     print(f'Saved to {save_path}')
     # print(agent.network.opt_state[0][1]['modules_critic']['value_net']['Dense_0']['kernel'])
