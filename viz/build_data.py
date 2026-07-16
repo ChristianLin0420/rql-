@@ -13,7 +13,7 @@ from statistics import mean
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROJECT = "rql-iclr2027-50tasks"
-STEPS = 1_000_000
+STEPS = int(os.environ.get("STEPS", 1_000_000))   # 2M campaign: STEPS=2000000 python viz/build_data.py
 SEEDS = 3
 
 # (run_prefix, group, label) -- add promoted variants here as they are launched.
@@ -114,15 +114,32 @@ def read_eval(prefix, group, env, seed):
                 curve=[[s, round(v, 1)] for s, v in rows])
 
 
+def snap(seed_curves, horizon):
+    """Mean over seeds of (last-3 evals at or before `horizon`), seeds that reached it only."""
+    vals = [mean(v for _, v in [p for p in c if p[0] <= horizon][-3:])
+            for c in seed_curves if c and c[-1][0] >= horizon]
+    return round(mean(vals), 1) if vals else None
+
+
+def mean_curve(seed_curves):
+    """Per-step mean success across the seeds that logged that step."""
+    by_step = {}
+    for c in seed_curves:
+        for s, v in c or []:
+            by_step.setdefault(s, []).append(v)
+    return [[s, round(mean(vs), 1)] for s, vs in sorted(by_step.items())]
+
+
 def collect(prefix, group):
     cats, tasks = {}, []
     for cat, rql5 in RQL.items():
         vals = []
         for t in range(1, 6):
             env = f"{cat}-singletask-task{t}-v0"
-            per_seed, diag, done = [], None, 0
+            per_seed, seed_curves, diag, done = [], [], None, 0
             for s in range(SEEDS):
                 ev = read_eval(prefix, group, env, s)
+                seed_curves.append(ev["curve"] if ev else None)
                 if ev is None:
                     continue
                 if ev["step"] >= STEPS:
@@ -134,6 +151,10 @@ def collect(prefix, group):
             ours = round(mean(per_seed), 1) if per_seed else None
             tasks.append(dict(env=env, cat=cat, domain=DOMAIN(cat), task=t,
                               ours=ours, n=done, rql=rql5[t - 1],
+                              seeds=[round(v, 1) for v in per_seed],
+                              ours_1m=snap(seed_curves, 1_000_000),
+                              ours_2m=snap(seed_curves, 2_000_000),
+                              curve=mean_curve(seed_curves),
                               rank_acc=(diag or {}).get("training/probe/rank_acc"),
                               w_self=(diag or {}).get("training/w_self")))
             if ours is not None:
@@ -162,12 +183,22 @@ def figures():
     return out
 
 
+def with_fallback(prefix, group, label):
+    """Live collect; if a variant has no local runs (e.g. trained on another cluster),
+    fall back to the committed snapshot in viz/<prefix>_static.json."""
+    v = dict(prefix=prefix, group=group, label=label, **collect(prefix, group))
+    fb = f"{REPO}/viz/{prefix.replace('dql', 'v')}_static.json"
+    if v["overall"] is None and os.path.exists(fb):
+        v.update(json.load(open(fb)))
+    return v
+
+
 data = dict(
     generated=datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
     queue=queue_status(),
     rql_overall=round(mean(mean(v) for v in RQL.values()), 1),
     rql_cats={k: round(mean(v), 1) for k, v in RQL.items()},
-    variants=[dict(prefix=p, group=g, label=l, **collect(p, g)) for p, g, l in VARIANTS],
+    variants=[with_fallback(p, g, l) for p, g, l in VARIANTS],
     figures=figures(),
 )
 

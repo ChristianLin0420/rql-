@@ -2,248 +2,1329 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Drift line · 50-task OGBench research dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Drift Line — 50-Task OGBench Research Report</title>
+<meta name="description" content="A drifting one-step policy versus RQL across 50 OGBench offline goal-conditioned RL tasks: method, theory, live benchmark results, diagnostics, and open questions.">
 <style>
-  /* ---- theme: white surface, NVIDIA-green anchor, validated categorical palette ---- */
-  :root{
-    --nv:#76B900; --s1:#76B900; --s2:#3B7BBF; --s3:#C87A2E; --s4:#B04A73;
-    --ink:#1a1a1a; --ink2:#555; --ink3:#8a8a8a; --line:#e8e8e6; --grid:#efefed;
-    --surface:#ffffff; --card:#ffffff; --chip:#f4f6f0;
-    --good:#3d8b37; --warn:#b58a00; --crit:#c0392b;
-  }
-  *{box-sizing:border-box} body{margin:0;background:var(--surface);color:var(--ink);
-    font:14px/1.5 -apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
-  .wrap{max-width:1180px;margin:0 auto;padding:0 24px 80px}
-  header{border-bottom:1px solid var(--line);padding:26px 0 18px;margin-bottom:26px}
-  header .bar{height:4px;background:var(--nv);width:64px;border-radius:2px;margin-bottom:14px}
-  h1{font-size:21px;margin:0 0 4px;font-weight:650}
-  .sub{color:var(--ink2);font-size:13px}
-  .chips{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
-  .chip{background:var(--chip);border:1px solid var(--line);border-radius:20px;
-    padding:3px 12px;font-size:12px;color:var(--ink2)}
-  .chip b{color:var(--ink)}
-  h2{font-size:15px;font-weight:650;margin:0}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;
-    padding:18px 20px;margin-bottom:22px}
-  .card .head{display:flex;justify-content:space-between;align-items:baseline;
-    gap:12px;margin-bottom:4px;flex-wrap:wrap}
-  .note{color:var(--ink2);font-size:12.5px;margin:2px 0 12px}
-  /* stat tiles */
-  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:22px}
-  .tile{border:1px solid var(--line);border-radius:10px;padding:14px 16px;background:var(--card)}
-  .tile .k{font-size:12px;color:var(--ink2);margin-bottom:2px}
-  .tile .v{font-size:26px;font-weight:680;letter-spacing:-.5px}
-  .tile .d{font-size:12px;color:var(--ink3)}
-  .tile.accent{border-top:3px solid var(--nv)}
-  /* legend */
-  .legend{display:flex;gap:14px;font-size:12px;color:var(--ink2);flex-wrap:wrap}
-  .legend .sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
-  /* figure roadmap cards: one card per row so figures render full-width */
-  .figs{display:flex;flex-direction:column;gap:18px}
-  .fig{border:1px solid var(--line);border-radius:10px;padding:16px 18px}
-  .fig h3{font-size:14px;margin:0 0 6px;font-weight:640}
-  .fig .media{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px}
-  .fig .media img,.fig .media video{flex:1 1 460px;min-width:300px;max-width:100%;
-    height:auto;object-fit:contain;border-radius:6px;border:1px solid var(--line)}
-  .badge{font-size:10.5px;border-radius:10px;padding:2px 9px;font-weight:600;
-    vertical-align:2px;margin-left:6px;white-space:nowrap}
-  .badge.pending{background:#f5f0e0;color:var(--warn)}
-  .badge.ready{background:#ecf5e2;color:var(--good)}
-  .badge.live{background:#e8f0fa;color:var(--s2)}
-  .fig .claim{font-size:12.5px;color:var(--ink)}
-  .fig .why{font-size:12px;color:var(--ink2);margin-top:6px}
-  .fig .regen{font-size:11px;color:var(--ink3);margin-top:8px;font-family:ui-monospace,Menlo,monospace;
-    background:#fafaf8;border:1px solid var(--grid);border-radius:6px;padding:5px 8px;overflow-x:auto;white-space:nowrap}
-  /* table */
-  table{border-collapse:collapse;width:100%;font-size:12.5px}
-  th{color:var(--ink2);font-weight:600;text-align:left;border-bottom:1px solid var(--line);padding:6px 8px}
-  td{padding:5px 8px;border-bottom:1px solid var(--grid)}
-  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
-  tr.cat td{background:#fafaf8;font-weight:640}
-  .pos{color:var(--good)} .neg{color:var(--crit)}
-  details summary{cursor:pointer;color:var(--ink2);font-size:13px;margin-bottom:10px}
-  /* tooltip */
-  #tip{position:fixed;pointer-events:none;background:var(--ink);color:#fff;font-size:12px;
-    border-radius:6px;padding:6px 10px;opacity:0;transition:opacity .08s;z-index:10;max-width:300px}
-  #tip b{color:#c9e89a}
-  svg text{font-family:inherit}
-  footer{color:var(--ink3);font-size:12px;border-top:1px solid var(--line);padding-top:14px}
-  code{background:#f6f6f4;border-radius:4px;padding:1px 5px;font-size:12px}
+/* ================= tokens ================= */
+:root{
+  --ink:#111827; --black:#000000; --cream:#f5f4ef; --paper:#fbfbf9; --paper-2:#efeee8;
+  --yellow:#fbd45b; --yellow-deep:#d8a900; --gray:#9ca3af; --muted:#656760;
+  --line:#d4d3cb; --line-dark:#333b49; --yellow-ink:#7f6400;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Baskerville,Georgia,"Times New Roman",serif;
+  --sans:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+  --shell:1440px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{transition:none!important;animation:none!important}
+}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.7 var(--sans);
+  -webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--yellow-ink);outline-offset:2px}
+.skip{position:absolute;left:-999px;top:0;background:var(--yellow);color:var(--black);
+  padding:8px 16px;z-index:100;font-family:var(--mono);font-size:13px}
+.skip:focus{left:8px;top:8px}
+.shell{max-width:var(--shell);margin:0 auto;padding:0 40px}
+.mono{font-family:var(--mono)}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase}
+hr.rule{border:0;border-top:1px solid var(--line);margin:0}
+
+/* ================= progress bar ================= */
+#pbar{position:fixed;top:0;left:0;height:3px;background:var(--yellow);width:0;z-index:60}
+
+/* ================= header ================= */
+header.top{background:var(--black);color:var(--cream);border-bottom:1px solid var(--line-dark)}
+header.top .shell{display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding-top:14px;padding-bottom:14px;flex-wrap:wrap}
+.wordmark{font-family:var(--mono);font-size:14px;letter-spacing:.3em;text-transform:uppercase;
+  color:var(--cream);text-decoration:none}
+.wordmark b{color:var(--yellow);font-weight:400}
+.top-links{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--mono);font-size:11.5px}
+.top-links a{color:var(--gray);text-decoration:none;border-bottom:1px solid transparent}
+.top-links a:hover{color:var(--cream);border-bottom-color:var(--yellow)}
+
+/* ================= hero ================= */
+.hero{background:var(--black);color:var(--cream);position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(var(--line-dark) 1px,transparent 1px),
+                   linear-gradient(90deg,var(--line-dark) 1px,transparent 1px);
+  background-size:56px 56px}
+.hero .shell{position:relative;display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);
+  gap:64px;padding-top:72px;padding-bottom:72px}
+.hero .eyebrow{color:var(--yellow)}
+.hero h1{font-family:var(--serif);font-weight:400;line-height:1.04;letter-spacing:-.01em;
+  font-size:clamp(38px,5.2vw,72px);margin:20px 0 26px}
+.hero h1 .yl{color:var(--yellow);font-style:italic}
+.hero .deck{font-size:18px;line-height:1.65;color:#c9cbc4;max-width:56ch;margin:0 0 28px}
+.thesis{border-left:3px solid var(--yellow);padding:6px 0 6px 20px;max-width:60ch}
+.thesis .eyebrow{color:var(--gray)}
+.thesis p{font-family:var(--serif);font-size:19px;line-height:1.5;margin:8px 0 0;color:var(--cream)}
+.hero-meta{display:flex;gap:26px;flex-wrap:wrap;margin-top:34px;font-family:var(--mono);font-size:11.5px;color:var(--gray)}
+.hero-meta b{display:block;color:var(--cream);font-weight:400;font-size:13px;margin-top:2px}
+.hero-meta .live b{color:var(--yellow)}
+/* hero system panel */
+.syspanel{border:1px solid var(--line-dark);background:rgba(0,0,0,.55);padding:22px;align-self:center;width:100%}
+.syspanel .eyebrow{color:var(--gray);margin-bottom:14px;display:block}
+.flow{display:flex;flex-direction:column;gap:0}
+.fnode{border:1px solid var(--line-dark);padding:9px 12px;font-family:var(--mono);font-size:11.5px;
+  color:var(--cream);background:#0a0d13;display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.fnode .tag{color:var(--gray);font-size:10px;white-space:nowrap}
+.fnode.hot{border-color:var(--yellow);background:#141105}
+.fnode.hot .tag{color:var(--yellow-deep)}
+.farrow{align-self:center;color:var(--yellow);font-size:13px;line-height:1.2;padding:2px 0;font-family:var(--mono)}
+.fside{display:grid;grid-template-columns:1fr 14px 1fr;gap:6px;align-items:center;margin:2px 0}
+.fside .fnode{margin:0;min-width:0}
+.fside .mid{color:var(--gray);text-align:center;font-family:var(--mono);font-size:11px}
+.syscap{margin-top:14px;font-size:11.5px;color:var(--gray);font-family:var(--mono);line-height:1.55}
+
+/* ================= metadata strip ================= */
+.strip{background:var(--cream);border-bottom:1px solid var(--line)}
+.strip .shell{display:grid;grid-template-columns:repeat(4,1fr);gap:0}
+.cell{border-left:1px solid var(--line);padding:22px 24px}
+.cell:first-child{border-left:0}
+.cell .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.cell .v{font-family:var(--serif);font-size:30px;margin-top:6px;line-height:1.1}
+.cell .d{font-size:12.5px;color:var(--muted);margin-top:4px}
+
+/* ================= live banner ================= */
+.liveband{background:var(--yellow);color:var(--black);border-bottom:1px solid var(--line)}
+.liveband .shell{display:flex;gap:20px;align-items:baseline;flex-wrap:wrap;padding-top:10px;padding-bottom:10px;
+  font-family:var(--mono);font-size:12px}
+.liveband b{font-weight:700}
+.liveband .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--black);margin-right:8px;vertical-align:1px}
+
+/* ================= body grid: sidebar + column ================= */
+.bodygrid{display:grid;grid-template-columns:240px minmax(0,1fr);gap:56px;padding-top:56px;padding-bottom:24px}
+nav.chapters{position:sticky;top:24px;align-self:start;font-family:var(--mono);font-size:12px}
+nav.chapters .eyebrow{color:var(--muted);margin-bottom:12px}
+nav.chapters ol{list-style:none;margin:12px 0 0;padding:0;border-left:1px solid var(--line)}
+nav.chapters li a{display:block;padding:7px 0 7px 16px;color:var(--muted);text-decoration:none;
+  border-left:2px solid transparent;margin-left:-1px;line-height:1.4}
+nav.chapters li a:hover{color:var(--ink)}
+nav.chapters li a.active{color:var(--ink);border-left-color:var(--yellow);background:var(--cream)}
+nav.chapters .num{color:var(--muted);margin-right:8px}
+nav.chapters li a.active .num{color:var(--yellow-ink)}
+#rtime{margin-top:22px;color:var(--muted);font-size:11px}
+details.mobile-nav{display:none}
+
+main{min-width:0}
+.chapter{padding:34px 0 58px;border-top:1px solid var(--line)}
+.chapter:first-child{border-top:0;padding-top:0}
+.ch-head{display:flex;align-items:baseline;gap:18px;margin-bottom:22px}
+.ch-no{font-family:var(--mono);font-size:12px;color:var(--yellow-ink)}
+h2{font-family:var(--serif);font-weight:400;font-size:clamp(26px,3vw,38px);line-height:1.15;margin:0;letter-spacing:-.01em}
+h3{font-family:var(--serif);font-weight:400;font-size:22px;margin:38px 0 12px}
+.prose{max-width:72ch}
+.prose p{margin:0 0 18px;font-family:var(--serif);font-size:17px;line-height:1.75}
+.prose .lead{font-size:19px;line-height:1.7}
+.wide{max-width:none}
+em.def{font-style:normal;background:var(--yellow);padding:0 4px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.smallnote{font-size:12.5px;color:var(--muted)}
+.marginal{border-top:2px solid var(--ink);padding-top:10px;margin:26px 0;font-size:13.5px;color:var(--muted);max-width:38ch}
+.marginal .eyebrow{color:var(--ink);display:block;margin-bottom:6px}
+
+/* pull quote / takeaway */
+.pull{font-family:var(--serif);font-size:24px;line-height:1.45;border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);padding:26px 0;margin:34px 0;max-width:64ch}
+.pull .mark{color:var(--yellow-ink)}
+.takeaway{background:var(--cream);border:1px solid var(--line);border-left:4px solid var(--yellow);
+  padding:18px 22px;margin:26px 0;max-width:74ch}
+.takeaway .eyebrow{color:var(--muted);display:block;margin-bottom:8px}
+.takeaway p{margin:0;font-size:15.5px}
+
+/* concept/implication two-up */
+.twoup{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--line);margin:26px 0}
+.twoup>div{padding:20px 24px}
+.twoup>div+div{border-left:1px solid var(--line)}
+.twoup .eyebrow{color:var(--muted);display:block;margin-bottom:10px}
+.twoup p{margin:0;font-size:14.5px;line-height:1.65}
+
+/* equations */
+.eqblock{border:1px solid var(--line);background:var(--cream);margin:22px 0;overflow-x:auto}
+.eqblock .eq{display:flex;gap:16px;align-items:baseline;padding:10px 18px;border-top:1px solid var(--line);white-space:nowrap}
+.eqblock .eq:first-child{border-top:0}
+.eqblock .no{font-family:var(--mono);font-size:10.5px;color:var(--yellow-ink);min-width:26px}
+.eqblock .fx{font-family:var(--mono);font-size:13.5px}
+.eqread{font-size:13.5px;color:var(--muted);margin:-12px 0 22px;max-width:70ch}
+.eqread b{color:var(--ink);font-weight:600}
+
+/* code panel */
+.codewrap{position:relative;margin:24px 0}
+.codepanel{background:var(--black);color:#d8dad2;border:1px solid var(--line-dark);
+  font-family:var(--mono);font-size:12.5px;line-height:1.6;overflow-x:auto;padding:18px 20px;margin:0}
+.codepanel .cm{color:#767b72}
+.codepanel .yl{color:var(--yellow)}
+.codehead{display:flex;justify-content:space-between;align-items:center;background:var(--line-dark);
+  color:var(--cream);font-family:var(--mono);font-size:11px;padding:6px 12px;letter-spacing:.08em}
+button.copy{font-family:var(--mono);font-size:10.5px;background:transparent;color:var(--gray);
+  border:1px solid var(--gray);padding:2px 10px;cursor:pointer;letter-spacing:.08em;text-transform:uppercase}
+button.copy:hover{color:var(--yellow);border-color:var(--yellow)}
+
+/* tables */
+.tscroll{overflow-x:auto;border:1px solid var(--line);margin:24px 0}
+.tscroll::after{content:"";display:block}
+table{border-collapse:collapse;width:100%;font-size:13px;background:var(--paper)}
+caption{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);caption-side:top}
+thead th{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
+  font-weight:500;text-align:left;padding:9px 14px;border-bottom:1px solid var(--ink);background:var(--cream)}
+tbody th{font-family:var(--sans);font-size:13px;font-weight:400;text-align:left;color:var(--ink);
+  background:transparent;padding:8px 14px;border-bottom:1px solid var(--paper-2);vertical-align:top}
+td{padding:8px 14px;border-bottom:1px solid var(--paper-2);vertical-align:top}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:12.5px}
+tr.catrow td,tr.catrow th{background:var(--cream);font-weight:600;border-top:1px solid var(--line);font-size:13px}
+td .pos{background:var(--yellow);color:var(--black);padding:0 5px}
+td .neg{color:var(--muted)}
+tfoot td{font-size:12px;color:var(--muted);border-bottom:0;padding-top:12px}
+
+/* charts */
+.chart{border:1px solid var(--line);background:var(--paper);padding:20px 20px 12px;margin:24px 0}
+.chart .chead{display:flex;justify-content:space-between;gap:16px;align-items:baseline;flex-wrap:wrap;margin-bottom:6px}
+.chart .ct{font-family:var(--serif);font-size:19px}
+.chart .legend{display:flex;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.legend .sw{display:inline-block;width:11px;height:11px;margin-right:6px;vertical-align:-1px;border:1px solid var(--ink)}
+.chart .ccap{font-size:12.5px;color:var(--muted);margin:10px 0 6px;max-width:80ch}
+svg{display:block;max-width:100%;height:auto}
+#benchChart,#deltaChart{overflow-x:auto}
+#benchChart svg,#deltaChart svg{min-width:720px}
+svg text{font-family:var(--mono)}
+.chart2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+
+/* stat tiles */
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);margin:24px 0}
+.tile{padding:20px 22px;border-left:1px solid var(--line)}
+.tile:first-child{border-left:0}
+.tile .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.tile .v{font-family:var(--serif);font-size:40px;line-height:1.05;margin-top:8px}
+.tile .v .u{font-size:16px;color:var(--muted)}
+.tile.hot{background:var(--black);color:var(--cream)}
+.tile.hot .k{color:var(--gray)}
+.tile.hot .v{color:var(--yellow)}
+.tile .d{font-size:12px;color:var(--muted);margin-top:6px}
+.tile.hot .d{color:var(--gray)}
+
+/* version timeline */
+.timeline{border:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);margin:28px 0;background:var(--paper)}
+.tl{padding:20px;border-left:1px solid var(--line);position:relative}
+.tl:first-child{border-left:0}
+.tl .ver{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.tl.now .ver{color:var(--black);background:var(--yellow);display:inline-block;padding:0 6px}
+.tl h3{font-family:var(--serif);font-weight:400;font-size:18px;margin:10px 0 8px}
+.tl p{font-size:12.5px;color:var(--muted);margin:0;line-height:1.55}
+.tl .jump{font-family:var(--mono);font-size:11px;margin-top:12px;color:var(--ink);border-top:1px solid var(--line);padding-top:8px}
+.tl .jump b{color:var(--yellow-ink);font-weight:600}
+
+/* insight rows */
+.insights{border-top:1px solid var(--ink);margin:26px 0}
+.insight{display:grid;grid-template-columns:64px minmax(0,2fr) minmax(0,3fr) 120px;gap:20px;
+  padding:18px 0;border-bottom:1px solid var(--line);align-items:baseline}
+.insight .n{font-family:var(--mono);font-size:13px;color:var(--yellow-ink)}
+.insight h3{font-family:var(--serif);font-weight:400;font-size:17px;margin:0}
+.insight p{font-size:13.5px;color:var(--muted);margin:0;line-height:1.6}
+.status{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  padding:3px 8px;border:1px solid var(--ink);white-space:nowrap;justify-self:start}
+.status.open{background:var(--yellow);border-color:var(--yellow-deep)}
+.status.fixed{background:var(--ink);color:var(--cream)}
+.status.dead{color:var(--muted);border-color:var(--muted);text-decoration:line-through}
+
+/* figures gallery */
+.figband{border:1px solid var(--line);margin:26px 0;background:var(--paper)}
+.figband .fh{display:flex;justify-content:space-between;gap:14px;align-items:baseline;
+  padding:16px 22px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.figband .fh h3{font-family:var(--serif);font-weight:400;font-size:19px;margin:0}
+.figstate{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border:1px solid var(--ink)}
+.figstate.ready{background:var(--yellow)}
+.figstate.pending{color:var(--muted);border-color:var(--muted)}
+.figband .fb{padding:16px 22px}
+.figband .claim{font-size:14.5px;max-width:80ch;margin:0 0 6px}
+.figband .why{font-size:12.5px;color:var(--muted);max-width:80ch;margin:0}
+.figband .media{display:flex;flex-wrap:wrap;gap:14px;margin-top:16px}
+.figband .media img,.figband .media video{flex:1 1 440px;min-width:280px;max-width:100%;height:auto;border:1px solid var(--line)}
+.regenrow{display:flex;gap:10px;align-items:center;margin-top:14px}
+.regenrow code{flex:1;font-family:var(--mono);font-size:11px;background:var(--cream);border:1px solid var(--line);
+  padding:6px 10px;overflow-x:auto;white-space:nowrap;color:var(--muted)}
+.regenrow button.copy{color:var(--muted);border-color:var(--line)}
+.regenrow button.copy:hover{color:var(--yellow-ink);border-color:var(--yellow-ink)}
+
+/* caveat / limitation list */
+.cavlist{list-style:none;margin:22px 0;padding:0;counter-reset:cav}
+.cavlist li{counter-increment:cav;padding:14px 0 14px 56px;border-bottom:1px solid var(--line);position:relative;max-width:80ch}
+.cavlist li::before{content:counter(cav,decimal-leading-zero);position:absolute;left:0;top:16px;
+  font-family:var(--mono);font-size:12px;color:var(--yellow-ink)}
+.cavlist b{font-weight:600}
+
+/* dark conclusion */
+.finale{background:var(--black);color:var(--cream);margin-top:30px}
+.finale .shell{padding-top:64px;padding-bottom:64px;display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:56px}
+.finale h2{color:var(--cream)}
+.finale .prose{color:#c9cbc4}
+.finale .prose p{font-size:16.5px}
+.finale .yl{color:var(--yellow)}
+.finale .nextlist{border-top:1px solid var(--line-dark);margin-top:8px}
+.finale .nextlist div{display:flex;gap:16px;padding:13px 0;border-bottom:1px solid var(--line-dark);
+  font-size:13.5px;color:#c9cbc4;align-items:baseline}
+.finale .nextlist .n{font-family:var(--mono);font-size:11px;color:var(--yellow)}
+
+/* footer */
+footer.end{background:var(--black);color:var(--gray);border-top:1px solid var(--line-dark)}
+footer.end .shell{padding-top:26px;padding-bottom:34px;display:flex;justify-content:space-between;
+  gap:20px;flex-wrap:wrap;font-family:var(--mono);font-size:11.5px;line-height:1.8}
+footer.end a{color:var(--cream);text-decoration:none;border-bottom:1px solid var(--line-dark)}
+footer.end a:hover{border-bottom-color:var(--yellow)}
+
+#totop{position:fixed;right:22px;bottom:22px;background:var(--black);color:var(--yellow);
+  border:1px solid var(--line-dark);font-family:var(--mono);font-size:11px;padding:9px 12px;cursor:pointer;
+  opacity:0;pointer-events:none;transition:opacity .15s;z-index:50}
+#totop.show{opacity:1;pointer-events:auto}
+
+/* ================= responsive ================= */
+@media (max-width:1120px){
+  .bodygrid{grid-template-columns:1fr;gap:0}
+  .chapter,.finale{scroll-margin-top:56px}
+  nav.chapters{display:none}
+  details.mobile-nav{display:block;position:sticky;top:0;z-index:40;background:var(--cream);
+    border-bottom:1px solid var(--line);font-family:var(--mono);font-size:12.5px;margin:0 -40px;padding:0 40px}
+  details.mobile-nav summary{padding:12px 0;cursor:pointer;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  details.mobile-nav ol{list-style:none;margin:0;padding:0 0 12px}
+  details.mobile-nav li a{display:block;padding:8px 0;color:var(--ink);text-decoration:none}
+  .hero .shell{grid-template-columns:1fr;gap:44px}
+  .strip .shell{grid-template-columns:1fr 1fr}
+  .cell:nth-child(3){border-left:0}
+  .cell{border-top:1px solid var(--line)}
+  .cell:nth-child(-n+2){border-top:0}
+  .chart2{grid-template-columns:1fr}
+  .finale .shell{grid-template-columns:1fr;gap:36px}
+  .insight{grid-template-columns:44px minmax(0,1fr) 110px;grid-template-areas:"n t s" "n p p"}
+  .insight .n{grid-area:n}.insight h3{grid-area:t}.insight p{grid-area:p}.insight .status{grid-area:s;justify-self:end}
+}
+@media (max-width:680px){
+  .shell{padding:0 20px}
+  details.mobile-nav{margin:0 -20px;padding:0 20px}
+  .hero .shell{padding-top:48px;padding-bottom:48px}
+  .strip .shell{grid-template-columns:1fr}
+  .cell{border-left:0;border-top:1px solid var(--line)}
+  .cell:first-child{border-top:0}
+  .tiles{grid-template-columns:1fr 1fr}
+  .tile:nth-child(3){border-left:0}
+  .tile{border-top:1px solid var(--line)}
+  .tile:nth-child(-n+2){border-top:0}
+  .timeline{grid-template-columns:1fr}
+  .tl{border-left:0;border-top:1px solid var(--line)}
+  .tl:first-child{border-top:0}
+  .twoup{grid-template-columns:1fr}
+  .twoup>div+div{border-left:0;border-top:1px solid var(--line)}
+  .insight{grid-template-columns:1fr;grid-template-areas:none}
+  .insight .n,.insight h3,.insight p,.insight .status{grid-area:auto}
+  .hero-meta{gap:16px}
+  .fnode .tag{white-space:normal}
+}
 </style>
 </head>
-<body data-palette="#76B900,#3B7BBF,#C87A2E,#B04A73">
-<div class="wrap">
-  <header>
-    <div class="bar"></div>
-    <h1>Drift line — 50-task OGBench research dashboard</h1>
-    <div class="sub">Multi-positive, state-local, advantage-tilted drifting vs RQL / DriftQL ·
-      generated <span id="gen"></span> · rebuild: <code>python viz/build_data.py</code></div>
-    <div class="chips" id="chips"></div>
-  </header>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div id="pbar" aria-hidden="true"></div>
 
-  <div class="tiles" id="tiles"></div>
-
-  <div class="card">
-    <div class="head"><h2>Benchmark — category success vs RQL (appendix Table 1)</h2>
-      <div class="legend" id="benchLegend"></div></div>
-    <div class="note">Success % at 1M steps, mean of last 3 evals, completed seeds only.
-      RQL trains 2M steps; puzzle-4x4 / cube-quadruple RQL rows use 100M-transition datasets (ours: standard v0).</div>
-    <div id="benchChart"></div>
+<header class="top">
+  <div class="shell">
+    <a class="wordmark" href="#top">Drift<b>&nbsp;Line</b></a>
+    <nav class="top-links" aria-label="Source links">
+      <a href="https://arxiv.org/abs/2606.17551">RQL — arXiv:2606.17551</a>
+      <a href="https://arxiv.org/abs/2606.00350">DriftQL — arXiv:2606.00350</a>
+      <a href="https://arxiv.org/abs/2605.07727">DFP — arXiv:2605.07727</a>
+    </nav>
   </div>
+</header>
+<noscript>
+<style>#tiles,#benchChart,#diagCharts,#figbands,.tscroll,.liveband,details.mobile-nav,nav.chapters ol,#rtime,#totop{display:none!important}</style>
+<div style="max-width:72ch;margin:16px auto;padding:12px 18px;border:1px solid #d4d3cb;font-family:ui-monospace,Menlo,monospace;font-size:13px;background:#f5f4ef">
+JavaScript is off: the editorial chapters below are fully readable; live charts, stat tiles, and
+the per-task matrix (rendered from data.js) are hidden.</div>
+</noscript>
 
-  <div class="card">
-    <div class="head"><h2>Diagnostics — critic health &amp; action borrowing (all 50 tasks, seed 0)</h2>
-      <div class="legend" id="diagLegend"></div></div>
-    <div class="note">Left (F7): critic ranking accuracy vs task success — bottom-right points are
-      “healthy critic, zero success”: extraction, not evaluation, is the bottleneck.
-      Right (F2): attraction self-weight <code>w_self</code> vs success — low w_self = policy borrows
-      neighboring states' actions (the multi-positive mechanism). Hover any point for the task.</div>
-    <div style="display:flex;gap:28px;flex-wrap:wrap" id="diagCharts"></div>
+<section class="hero" id="top">
+  <div class="shell">
+    <div>
+      <span class="eyebrow">Offline goal-conditioned RL &middot; 50-task benchmark report</span>
+      <h1>The policy is one forward pass,<br><span class="yl">dragged toward the best nearby action.</span></h1>
+      <p class="deck">
+        A drifting one-step generator — internal codename DQL v11.2 — evaluated head-to-head against RQL
+        across all 50 OGBench single-task environments: 10 families, 3 seeds, two million offline
+        gradient steps each — step parity with the RQL baseline. This page is the living report: method, theory, live results, and the diagnostics
+        that say <em>why</em> the numbers are what they are.
+      </p>
+      <div class="thesis">
+        <span class="eyebrow">Thesis</span>
+        <p>Diffusion-class expressiveness does not require diffusion-class inference: amortize the
+        iteration into training by drifting the generator toward advantage-tilted actions borrowed
+        from neighboring states — and stitching emerges from the borrowing.</p>
+      </div>
+      <div class="hero-meta" role="list">
+        <span role="listitem">DATA UPDATED<b id="m-gen">—</b></span>
+        <span role="listitem">BENCHMARK<b>OGBench &times; 50 tasks</b></span>
+        <span role="listitem">BASELINE<b>RQL (2M steps, paper)</b></span>
+        <span role="listitem" class="live">SWEEP STATUS<b id="m-status">—</b></span>
+      </div>
+    </div>
+    <div class="syspanel" role="img" aria-label="System diagram: dataset actions from nearest-neighbor states are advantage-tilted, forming a drift field that drags the one-step generator; a critic ensemble supplies the advantage; deployment takes one forward pass.">
+      <span class="eyebrow">System — one training step</span>
+      <div class="flow">
+        <div class="fnode"><span>dataset 𝒟 &middot; batch states s<sub>i</sub></span><span class="tag">offline</span></div>
+        <div class="farrow">&darr;</div>
+        <div class="fnode"><span>kNN neighbor states &middot; their actions a<sub>j</sub></span><span class="tag">M = 32</span></div>
+        <div class="farrow">&darr;</div>
+        <div class="fside">
+          <div class="fnode"><span>critic Q<sub>e</sub> &middot; expectile V</span><span class="tag">E = 10, &kappa;</span></div>
+          <div class="mid">&rarr;</div>
+          <div class="fnode hot"><span>advantage tilt w<sub>j</sub></span><span class="tag">&tau;<sub>adv</sub> = 0.25</span></div>
+        </div>
+        <div class="farrow">&darr;</div>
+        <div class="fnode hot"><span>drift field &nbsp;V<sub>drift</sub> = m<sub>p</sub> &minus; m<sub>q</sub></span><span class="tag">&eta; = 1.5</span></div>
+        <div class="farrow">&darr;</div>
+        <div class="fnode"><span>generator &pi;<sub>&theta;</sub>(s, &epsilon;) &larr; regress to drifted self</span><span class="tag">one step</span></div>
+        <div class="farrow">&darr;</div>
+        <div class="fnode"><span>deploy: EMA &theta;̄ &middot; 32 samples &middot; medoid</span><span class="tag">O(1) calls</span></div>
+      </div>
+      <p class="syscap">Attraction pulls toward high-advantage in-support actions of nearby states;
+      repulsion from the generator's own samples keeps it spread. No backprop through sampling,
+      no flow inversion, no &nabla;<sub>a</sub>Q in the drift path.</p>
+    </div>
   </div>
+</section>
 
-  <div class="card">
-    <div class="head"><h2>Paper-figure roadmap</h2></div>
-    <div class="note">Each card is one planned paper figure. Drop generated artifacts into
-      <code>viz/figs/&lt;id&gt;_*.png|svg|gif|mp4</code> and rerun the build — they appear here automatically.</div>
-    <div class="figs" id="figCards"></div>
+<section class="strip" aria-label="Key statistics">
+  <div class="shell">
+    <div class="cell"><div class="k">Scale</div><div class="v">50 &times; 3 &times; 2M</div><div class="d">tasks &times; seeds &times; offline steps; 1 GPU per task, 4h self-requeueing windows</div></div>
+    <div class="cell"><div class="k">Protocol</div><div class="v">last 3 evals</div><div class="d">success %, 50 episodes per eval, every 50k steps; mean over 3 seeds</div></div>
+    <div class="cell"><div class="k">RQL overall</div><div class="v" id="m-rql">—</div><div class="d">paper appendix Table 1 — 2M steps, matched by our extended runs</div></div>
+    <div class="cell"><div class="k">Ours overall</div><div class="v" id="m-ours">—</div><div class="d" id="m-ours-d">mean of category means, completed seeds only</div></div>
   </div>
+</section>
 
-  <div class="card">
-    <div class="head"><h2>Per-task table</h2></div>
-    <details open><summary>toggle table</summary><div id="taskTable"></div></details>
+<div class="liveband" id="liveband" hidden>
+  <div class="shell">
+    <span><span class="dot" aria-hidden="true"></span><b>LIVE RUN</b></span>
+    <span id="live-done">—</span>
+    <span id="live-queue">—</span>
+    <span>page re-renders from <b>data.js</b> — rebuild: <b>python viz/build_data.py</b></span>
   </div>
-
-  <footer>
-    Theme: white surface, NVIDIA-green anchored categorical palette
-    <code>#76B900 #3B7BBF #C87A2E #B04A73</code> (validated: lightness band, chroma, CVD separation;
-    green's low surface-contrast is relieved by direct labels + this table view).
-    Extend: add a variant or figure entry in <code>viz/build_data.py</code>.
-  </footer>
 </div>
-<div id="tip"></div>
+
+<div class="shell">
+  <details class="mobile-nav">
+    <summary>Chapters</summary>
+    <ol id="mnav"></ol>
+  </details>
+
+  <div class="bodygrid">
+    <nav class="chapters" aria-label="Chapters">
+      <span class="eyebrow">Contents</span>
+      <ol id="chnav"></ol>
+      <div id="rtime" aria-live="off"></div>
+    </nav>
+
+    <main id="main">
+
+      <!-- ============ 01 CONTEXT ============ -->
+      <section class="chapter" id="context" data-title="The problem">
+        <div class="ch-head"><span class="ch-no">01</span><h2>An offline policy has two jobs. Most methods buy the second with expensive inference.</h2></div>
+        <div class="prose">
+          <p class="lead">In offline goal-conditioned RL, a policy must stay on the data manifold —
+          out-of-distribution actions meet a critic that has never seen them and will happily
+          overestimate them — while still <em>improving</em> on the behavior that generated the data.
+          The strongest recent systems resolve this tension with expressive generative policies:
+          diffusion or flow models that can represent the multimodal action distributions real
+          datasets contain.</p>
+          <p>RQL — the baseline throughout this report — is one such system: a flow-based policy
+          trained for 2M gradient steps, evaluated across all 50 OGBench single-task environments
+          (10 families &times; 5 goals). Its published appendix numbers are the bar here.
+          But expressiveness bought with an inference-time integration has costs: reconstruction
+          error accumulates across flow steps, and the value bootstrap rides on top of it.</p>
+          <p>The drift line asks a narrower question: <em class="def">can a policy that is a single
+          forward pass keep the expressiveness and drop the iteration?</em> The generator
+          <span class="mono">a&nbsp;=&nbsp;&pi;<sub>&theta;</sub>(s,&epsilon;)</span> is an implicit
+          distribution — as multimodal as a diffusion policy, with no density, no ODE, no sampling
+          chain. All the iteration happens at training time, where it is amortized: each SGD step
+          moves the pushforward distribution one drift-step toward the target policy.</p>
+        </div>
+
+        <div class="twoup">
+          <div>
+            <span class="eyebrow">The bet</span>
+            <p>Attraction candidates come from <b>neighboring states' actions</b> — multi-positive,
+            state-local, advantage-tilted. At a junction where two dataset trajectories cross, the
+            policy can adopt whichever episode's action has higher advantage. That recombination
+            <i>is</i> trajectory stitching, the core competency offline GCRL is scored on.</p>
+          </div>
+          <div>
+            <span class="eyebrow">The counterpoint</span>
+            <p>Concurrent work (DriftQL, arXiv:2606.00350) builds a drift actor on the opposite
+            premise — <b>"offline RL is single-positive by construction"</b>: each state pulls only
+            toward its own dataset action. The multi-positive mechanism is this project's central
+            differentiating claim, and the diagnostics in chapter 05 are designed to test it.</p>
+          </div>
+        </div>
+
+        <div class="takeaway">
+          <span class="eyebrow">Why 50 tasks</span>
+          <p>Single-environment wins don't survive contact with a benchmark. The 50-task OGBench
+          suite spans locomotion (antmaze, humanoidmaze) where stitching dominates, and sparse
+          manipulation (scene, puzzle, cube) where reward density collapses to fractions of a
+          percent — cube-double's success density is 0.058%. A method claim has to hold across both.</p>
+        </div>
+      </section>
+
+      <!-- ============ 02 METHOD ============ -->
+      <section class="chapter" id="method" data-title="The method">
+        <div class="ch-head"><span class="ch-no">02</span><h2>A critic that can rank actions, and an actor whose drift never asks it for a gradient.</h2></div>
+        <div class="prose">
+          <p class="lead">The agent is two coupled components. The critic must be <em>action-sharp</em> —
+          able to rank actions at a fixed state — and optimistic enough to carry an improvement
+          signal. The actor must extract that signal without querying
+          <span class="mono">&nabla;<sub>a</sub>Q</span> at actions the critic has never seen.
+          Actions are chunks: <span class="mono">a&nbsp;&isin;&nbsp;&#8477;<sup>hd</sup></span> flattens
+          <span class="mono">h</span> consecutive atomic actions (h=1 locomotion, h=5 manipulation).</p>
+        </div>
+
+        <h3>The target the actor drifts toward</h3>
+        <div class="eqblock" role="group" tabindex="0" aria-label="Target policy equations (scrollable)">
+          <div class="eq"><span class="no">1</span><span class="fx">max<sub>q</sub>&nbsp; E<sub>a~q</sub>[ Q(s,a) ] &nbsp;&minus;&nbsp; &alpha; &middot; KL( q(&middot;|s) &Vert; &mu;(&middot;|s) )</span></div>
+          <div class="eq"><span class="no">2</span><span class="fx">&pi;*(a|s) = (1/Z(s)) &middot; &mu;(a|s) &middot; exp( A(s,a) / &alpha; ),&nbsp;&nbsp; A = Q &minus; V</span></div>
+        </div>
+        <p class="eqread"><b>In plain language:</b> the ideal policy is the behavior distribution
+        &mu; exponentially re-weighted by advantage — improve where the critic says to, but never
+        leave what the data supports. Everything below is machinery for reaching (2) with a
+        one-step generator.</p>
+
+        <h3>Critic — IQL backup, expectile value, in-support contrast</h3>
+        <div class="eqblock" role="group" tabindex="0" aria-label="Critic loss equations (scrollable)">
+          <div class="eq"><span class="no">V1</span><span class="fx">L<sub>V</sub> = E<sub>i</sub>[ |&kappa; &minus; 𝟙{&Delta;<sub>i</sub>&lt;0}| &middot; &Delta;<sub>i</sub>&sup2; ],&nbsp;&nbsp; &Delta;<sub>i</sub> = mean<sub>e</sub> Q̄<sub>e</sub>(s<sub>i</sub>,a<sub>i</sub>) &minus; V(s<sub>i</sub>)</span></div>
+          <div class="eq"><span class="no">V2</span><span class="fx">y<sub>i</sub> = &Sigma;<sub>j&lt;h</sub> &gamma;<sup>j</sup> r<sub>i,j</sub> + &gamma;<sup>h</sup> V(s<sub>i</sub>&prime;)</span></div>
+          <div class="eq"><span class="no">V3</span><span class="fx">L<sub>Q</sub> = E<sub>i,e</sub>[ (Q<sub>e</sub>(s<sub>i</sub>,a<sub>i</sub>) &minus; y<sub>i</sub>)&sup2; &middot; valid<sub>i</sub> ]</span></div>
+          <div class="eq"><span class="no">V4</span><span class="fx">L<sub>C</sub> = E<sub>i,n</sub>[ relu( mean<sub>e</sub> Q<sub>e</sub>(s<sub>i</sub>,a<sub>n</sub><sup>&minus;</sup>) &minus; mean<sub>e</sub> Q<sub>e</sub>(s<sub>i</sub>,a<sub>i</sub>) + m ) ]</span></div>
+        </div>
+        <p class="eqread"><b>In plain language:</b> (V2)–(V3) is IQL with an h-step backup — no policy
+        in the TD target, so nothing off-support enters the bootstrap. (V1)'s expectile &kappa; is the
+        improvement dial: at &kappa;=0.5, V is the behavior mean; as &kappa;&rarr;1, V approaches the
+        in-support max and the backup compounds improvement recursively. (V4) is the anti-flatness
+        lever — data actions must out-rank random and generator negatives by margin m, which keeps
+        Q from collapsing to a function of state alone (the failure that killed v10).</p>
+
+        <h3>Actor — attraction, repulsion, damped ascent</h3>
+        <div class="eqblock" role="group" tabindex="0" aria-label="Actor equations (scrollable)">
+          <div class="eq"><span class="no">A1</span><span class="fx">A<sub>j</sub> = Q<sub>LCB</sub><sup>target</sup>(s<sub>i</sub>,a<sub>j</sub>) &minus; V(s<sub>i</sub>);&nbsp;&nbsp; &Acirc;<sub>j</sub> = A<sub>j</sub> / E|A|</span></div>
+          <div class="eq"><span class="no">A2</span><span class="fx">w<sub>j</sub> = softmax<sub>j</sub>( &Acirc;<sub>j</sub> / &tau;<sub>adv</sub> &minus; &Vert;s<sub>i</sub> &minus; s<sub>j</sub>&Vert;&sup2; / b )</span></div>
+          <div class="eq"><span class="no">A3</span><span class="fx">m<sub>p</sub>(g) = &Sigma;<sub>j</sub> k(g,a<sub>j</sub>) w<sub>j</sub> a<sub>j</sub> / &Sigma;<sub>j</sub> k(g,a<sub>j</sub>) w<sub>j</sub></span></div>
+          <div class="eq"><span class="no">A4</span><span class="fx">m<sub>q</sub>(g) = &Sigma;<sub>k&prime;&ne;k</sub> k(g,g<sub>k&prime;</sub>) g<sub>k&prime;</sub> / &Sigma;<sub>k&prime;&ne;k</sub> k(g,g<sub>k&prime;</sub>)</span></div>
+          <div class="eq"><span class="no">A5</span><span class="fx">V<sub>drift</sub>(g) = m<sub>p</sub>(g) &minus; m<sub>q</sub>(g)</span></div>
+          <div class="eq"><span class="no">A6</span><span class="fx">L<sub>drift</sub> = E<sub>i,k</sub> &Vert; g<sub>k</sub> &minus; sg( g<sub>k</sub> + &eta; &middot; V<sub>drift</sub>(g<sub>k</sub>) ) &Vert;&sup2;</span></div>
+          <div class="eq"><span class="no">A7</span><span class="fx">L<sub>asc</sub> = &minus;E<sub>i,k</sub>[ Q<sub>LCB</sub><sup>target</sup>(s<sub>i</sub>,g<sub>k</sub>) ]</span></div>
+          <div class="eq"><span class="no">A8</span><span class="fx">L<sub>actor</sub> = L<sub>drift</sub> + c<sub>q</sub> &middot; L<sub>asc</sub></span></div>
+        </div>
+        <p class="eqread"><b>In plain language:</b> for each batch state, take the M=32 nearest
+        neighbor states and their data actions as candidates (A1–A2 weight them by normalized
+        advantage, discounted by state distance). The drift field (A5) is a difference of two
+        kernel-weighted means: attraction toward the tilted candidate cloud, repulsion from the
+        generator's own samples — approximately
+        <span class="mono">&tau;&sup2;&nabla;log(p&#770;<sub>w</sub>/q&#770;)(g)</span>, a score
+        estimate that never touches <span class="mono">&nabla;<sub>a</sub>Q</span>. (A6) regresses
+        the generator onto its own drifted output; the stop-gradient means no backprop through
+        sampling. (A7) is the one exception — an explicit Q-ascent that <em>does</em> query the
+        critic at generator actions — kept on a leash at c<sub>q</sub>=0.25 because at 1.0 it
+        oscillated (chapter 03).</p>
+
+        <div class="marginal">
+          <span class="eyebrow">Deployment</span>
+          Evaluation draws K=32 samples from the slow EMA generator &theta;̄ and deploys the medoid —
+          the sample minimizing total squared distance to the others. Chapter 07 shows why this
+          choice is now a suspect.
+        </div>
+
+        <h3>As implemented</h3>
+        <div class="codewrap">
+          <div class="codehead"><span>agents/dql_v11_2.py &middot; one update step (condensed)</span>
+            <button class="copy" type="button" data-copy="#pseudocode">Copy</button></div>
+          <pre class="codepanel" id="pseudocode" tabindex="0" role="region" aria-label="Pseudocode: one update step (scrollable)"><span class="cm"># ---- critic: IQL Q + expectile V + in-support contrast ----</span>
+q_pred = Q_ensemble(s0, a_data)                  <span class="cm"># a_data = h-step action chunk</span>
+adv    = mean(target_Q(s0, a_data)) - mean(V(s0))
+L_v    = mean( where(adv&gt;=0, expectile, 1-expectile) * adv^2 )
+y      = n_step_rewards + discount^h * V(s_next) * masks
+L_q    = mean( (q_pred - y)^2 * valids )
+gen    = actor(s0, eps_g)  <span class="cm"># G=16 noise draws; gsg = stop_grad(gen)</span>
+a_neg  = concat(uniform_random(n_rand=8), gsg)
+L_c    = mean( relu( Q(s0, a_neg) - Q(s0, a_data) + margin ) )
+critic_loss = L_q + v_coef*L_v + cql_coef*L_c
+
+<span class="cm"># ---- one-step drift actor ----</span>
+nn      = M=32 nearest-neighbor states in batch
+a_cand  = a_data[nn];  q_im = stop_grad( LCB_targetQ(s0, a_cand) )
+adv_n   = (q_im - V(s0)) / mean|adv|
+w       = softmax( adv_n / <span class="yl">adv_temp</span> - sq_sel / (state_bw * mean(sq)) )
+kern_p  = exp(-|gsg - a_cand|^2 / 2*tau2) * w    <span class="cm"># -&gt; mean_p</span>
+kern_q  = exp(-|gsg - gsg'|^2  / 2*tau2) * (1-I) <span class="cm"># -&gt; mean_q (leave-one-out)</span>
+V_drift = mean_p - mean_q
+goal    = stop_grad( gen + <span class="yl">drift_step</span> * V_drift )
+actor_loss = drift_coef * mean|gen - goal|^2 - <span class="yl">q_coef</span> * mean(LCB_targetQ(s0, gen))
+
+<span class="cm"># ---- targets / deployment ----</span>
+target_q     &lt;- 0.005*q + 0.995*target_q
+target_actor &lt;- 0.005*actor + 0.995*target_actor  <span class="cm"># eval uses this EMA</span>
+deploy: 32 samples from target_actor -&gt; medoid (argmin total pairwise squared dist)</pre>
+        </div>
+
+        <div class="tscroll" tabindex="0" role="region" aria-label="Configuration defaults (scrollable)">
+          <table>
+            <caption>get_config() — the knobs that define v11.2</caption>
+            <thead><tr><th scope="col">knob</th><th scope="col" class="num">value</th><th scope="col">role</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">adv_temp (&tau;<sub>adv</sub>)</td><td class="num">0.25</td><td>advantage-softmax temperature — <b>sharper</b> than v11.1's 0.5; peaks weight onto the argmax-advantage candidate</td></tr>
+              <tr><td class="mono">drift_step (&eta;)</td><td class="num">1.5</td><td>drift step size — <b>stronger pull</b> than v11.1's 1.0</td></tr>
+              <tr><td class="mono">expectile (&kappa;)</td><td class="num">0.7 / 0.9</td><td>run flag: 0.7 locomotion, 0.9 puzzle-4x4 &amp; cube — the improvement signal (v11/v11.1 antmaze used 0.5)</td></tr>
+              <tr><td class="mono">q_coef (c<sub>q</sub>)</td><td class="num">0.25</td><td>damped Q-ascent weight (1.0 caused oscillation in v11)</td></tr>
+              <tr><td class="mono">actor_ema (&lambda;)</td><td class="num">0.005</td><td>slow generator EMA; evaluation deploys from it</td></tr>
+              <tr><td class="mono">n_cand (M)</td><td class="num">32</td><td>kNN attraction candidates per state</td></tr>
+              <tr><td class="mono">ensemble_ct (E)</td><td class="num">10</td><td>critic ensemble; Q<sub>LCB</sub> = mean &minus; &rho;&middot;std, &rho; &isin; {0, 0.5}</td></tr>
+              <tr><td class="mono">margin (m)</td><td class="num">1.0</td><td>in-support contrast margin (anti-flatness)</td></tr>
+              <tr><td class="mono">state_bw / tau_scale</td><td class="num">0.15 / 0.5</td><td>state-kernel and action-kernel bandwidths (adaptive to batch scale)</td></tr>
+              <tr><td class="mono">h</td><td class="num">1 / 5</td><td>action-chunk horizon: locomotion / manipulation</td></tr>
+              <tr><td class="mono">lr &middot; batch &middot; nets</td><td class="num">3e-4 &middot; 256 &middot; 512&times;4</td><td>single Adam over all modules; layer-norm critics</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="smallnote">Per-family run flags (slurm/tasks.tsv): antmaze h=1 &kappa;=0.7 &rho;=0.5;
+        humanoidmaze h=1 &kappa;=0.7 &rho;=0; scene &amp; puzzle-3x3 h=5 &kappa;=0.7 sparse;
+        puzzle-4x4 h=5 &kappa;=0.9 sparse; cube h=5 &kappa;=0.9. One manipulation config across all
+        cube tasks — RQL's per-task tuning is the bar, not the recipe.</p>
+      </section>
+
+      <!-- ============ 03 VERSION LINE ============ -->
+      <section class="chapter" id="versions" data-title="The version line">
+        <div class="ch-head"><span class="ch-no">03</span><h2>Three failures, three fixes: how v11.2 was derived, not tuned.</h2></div>
+        <div class="prose">
+          <p class="lead">Each version transition was forced by a measured failure and verified by a
+          measured recovery. The line matters because it turns the final recipe into a set of
+          falsifiable claims — each knob has a diagnostic that says why it holds its value.</p>
+        </div>
+        <div class="timeline">
+          <div class="tl">
+            <span class="ver">v10</span>
+            <h3>Action-flat critic</h3>
+            <p>The geometric-interpolation value trained toward an action-independent target —
+            actively regularizing Q to ignore actions. Probe: rank_acc peaked 0.63 then decayed to
+            0.57; action/state spread ratio fell to 0.022 (V varies ~45&times; more across states
+            than actions). Zero success on the cube families — 0.0 through 550–600k.</p>
+            <div class="jump">probe ratio <b>0.086 &rarr; 0.022</b> &middot; killed</div>
+          </div>
+          <div class="tl">
+            <span class="ver">v11</span>
+            <h3>Critic fixed; actor exposed</h3>
+            <p>IQL transition target + margin contrast + noise-free V head. rank_acc &rarr; 1.0 and
+            holds. But cube-double stayed 0.0 through 500k, and antmaze-large swung 0.50&harr;0.00
+            between consecutive evals — the failure moved from critic to actor.</p>
+            <div class="jump">rank_acc <b>0.57 &rarr; 1.0</b> &middot; still unstable</div>
+          </div>
+          <div class="tl">
+            <span class="ver">v11.1</span>
+            <h3>Stability solved, strength capped</h3>
+            <p>Advantage-weighted drift, Q-ascent damped to c<sub>q</sub>=0.25, eval EMA (RQL's own
+            stability trick). Eval swing fell 0.162 &rarr; 0.082 — fully stable — but performance
+            plateaued at ~0.38 on antmaze-large versus RQL's 0.84: stable-but-weak.</p>
+            <div class="jump">swing <b>0.162 &rarr; 0.082</b> &middot; capped at 0.38</div>
+          </div>
+          <div class="tl now">
+            <span class="ver">v11.2 — this run</span>
+            <h3>Strength levers</h3>
+            <p>Sharper tilt (&tau;<sub>adv</sub> 0.5&rarr;0.25), stronger pull (&eta; 1.0&rarr;1.5),
+            and the expectile correction: &kappa;=0.7 instead of the 0.5 copied from RQL's flow-value
+            regime — restoring a recursive improvement signal. Pilot: antmaze-large 0.38 &rarr; 0.73
+            at 100k steps.</p>
+            <div class="jump">antmaze-large <b>0.38 &rarr; 0.73</b> @100k pilot</div>
+          </div>
+        </div>
+        <div class="pull">
+          <span class="mark">&para;</span> The v11.1 cap wasn't a capacity limit — it was &kappa;=0.5
+          removing recursive improvement propagation. An IQL-style critic needs an optimistic
+          expectile to compound improvement through the bootstrap.
+        </div>
+        <p class="prose smallnote">The 0.73 anchor is a single-seed pilot at 100k steps, not the
+        pre-registered gate (mean over evals &ge;250k &ge; 0.5). The 50-task run on this page is the
+        real test. Pre-registered falsification: if all three levers land at v11.1 level, the
+        one-step drift caps out and improvement must come from a multi-step generator — the
+        RQL-style capacity this line set out to avoid.</p>
+      </section>
+
+      <!-- ============ 04 RESULTS ============ -->
+      <section class="chapter" id="results" data-title="Results vs RQL">
+        <div class="ch-head"><span class="ch-no">04</span><h2>The benchmark: 50 tasks against the published RQL column.</h2></div>
+        <div class="prose">
+          <p class="lead">Everything in this chapter renders live from <span class="mono">data.js</span>
+          — completed seeds only, incomplete runs excluded per protocol. Where the current variant has
+          no finished seeds yet, cells read <span class="mono">pending</span> rather than borrowing
+          numbers from anywhere else.</p>
+        </div>
+
+        <div class="tiles" id="tiles"></div>
+
+        <div class="chart">
+          <div class="chead">
+            <span class="ct">Category success — drift line vs RQL</span>
+            <div class="legend" id="benchLegend"></div>
+          </div>
+          <p class="ccap">Success % per category (mean of its 5 tasks). RQL bars are the paper's
+          appendix Table 1 values (2M steps); ours show each variant's latest trained horizon —
+          v11.1 at 1M (prior sweep), v11.2 at its 2M target on standard
+          <span class="mono">-v0</span> datasets. The 1M&rarr;2M chart below isolates the horizon
+          effect. Exact values printed at each bar.</p>
+          <div id="benchChart"></div>
+        </div>
+
+        <h3>Training dynamics — where more steps help, and where they hurt</h3>
+        <div class="chart" id="curveWrap" hidden>
+          <div class="chead">
+            <span class="ct">Success vs training step, per family</span>
+            <div class="legend"><span><span class="sw" style="background:none;border:0;border-top:1px solid var(--gray);height:0;vertical-align:3px"></span>task (mean over seeds)</span>
+              <span><span class="sw" style="background:none;border:0;border-top:2px solid var(--ink);height:0;vertical-align:3px"></span>family mean</span>
+              <span><span class="sw" style="background:none;border:0;border-top:1px dashed var(--ink);height:0;vertical-align:3px;opacity:.55"></span>RQL @2M</span>
+              <span><span class="sw" style="background:none;border:0;border-left:1px dashed var(--gray);width:0;height:11px"></span>&nbsp;1M boundary</span></div>
+          </div>
+          <p class="ccap">Each panel is one family: five thin lines are its tasks (success %, mean over
+          seeds at each eval), the bold line is the family mean, the dashed horizontal is RQL's published
+          category mean. Curves that bend down after the 1M boundary are degrading with continued
+          training; curves still climbing argue the budget, not the mechanism, was binding.</p>
+          <div id="curvePanels" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:20px"></div>
+        </div>
+
+        <div class="chart" id="deltaWrap" hidden>
+          <div class="chead">
+            <span class="ct">What the second million steps bought</span>
+            <div class="legend"><span><span class="sw" style="background:var(--gray);border-radius:50%"></span>@1M</span>
+              <span><span class="sw" style="background:var(--yellow);border-radius:50%"></span>@2M</span>
+              <span><span class="sw" style="background:none;border:0;border-left:2px solid var(--ink);width:0;height:11px;opacity:.5"></span>&nbsp;RQL @2M</span></div>
+          </div>
+          <p class="ccap" id="deltaCap"></p>
+          <div id="deltaChart"></div>
+        </div>
+
+        <div class="tscroll" tabindex="0" role="region" aria-label="Per-task results matrix (scrollable)">
+          <table id="taskTable">
+            <caption id="taskCaption">Per-task matrix — success % at each variant's latest trained horizon (v11.1: 1M · v11.2: 2M), mean of last 3 evals</caption>
+          </table>
+        </div>
+
+        <div class="takeaway">
+          <span class="eyebrow">Read the numbers with these caveats</span>
+          <p><b>Training budget:</b> v11.2 matches RQL's 2M gradient steps (the v11.1 column is a
+          1M-step prior sweep).
+          <b>Datasets:</b> the paper's puzzle-4x4 and cube-quadruple rows use 100M-transition
+          dataset variants; ours are standard v0. <b>Aggregation:</b> ours is 3 seeds &times; mean
+          of last 3 evals; the paper reports bootstrap CIs over its own protocol. Win/tie/loss uses
+          a &plusmn;3-point band.</p>
+        </div>
+      </section>
+
+      <!-- ============ 05 DIAGNOSTICS ============ -->
+      <section class="chapter" id="diagnostics" data-title="Diagnostics">
+        <div class="ch-head"><span class="ch-no">05</span><h2>Two scatters that say <em>why</em>: critic health, and where actions are borrowed.</h2></div>
+        <div class="prose">
+          <p class="lead">A success table can't distinguish "the critic can't see" from "the actor
+          can't extract." Two internal diagnostics, logged on every task, separate them.</p>
+          <p><span class="mono">rank_acc</span> is the fraction of uniform-random actions the data
+          action out-ranks under Q<sub>LCB</sub> at the same state — a direct probe of action-sharpness.
+          <span class="mono">w_self</span> is the attraction weight a state's <em>own</em> action retains
+          among its kNN candidates — when it is low, the drift target is dominated by neighboring
+          states' actions. Low w_self is the multi-positive mechanism caught in the act.</p>
+        </div>
+        <div class="chart">
+          <div class="chead">
+            <span class="ct">Critic health &times; action borrowing — all 50 tasks, seed 0</span>
+            <div class="legend" id="diagLegend"></div>
+          </div>
+          <p class="ccap">Left: bottom-right points — critic near-perfect, success zero — are tasks
+          where <b>extraction, not evaluation, is the bottleneck</b>. Right: if the stitching story
+          holds, success on locomotion should coexist with low self-weight (heavy borrowing).</p>
+          <div class="chart2" id="diagCharts"></div>
+        </div>
+        <div class="pull"><span class="mark">&para;</span> rank_acc &rarr; 1 while sparse-manipulation
+        success stays 0: critic quality is necessary but not sufficient. The remaining failures live
+        in the actor and its deployment path.</div>
+      </section>
+
+      <!-- ============ 06 EVIDENCE ============ -->
+      <section class="chapter" id="evidence" data-title="Figure evidence">
+        <div class="ch-head"><span class="ch-no">06</span><h2>The paper-figure program: each claim gets one falsifiable picture.</h2></div>
+        <div class="prose">
+          <p class="lead">Eight planned figures, each pairing a mechanism claim with the artifact that
+          could refute it. Artifacts drop into <span class="mono">viz/figs/</span> and appear here on
+          rebuild; the regenerate command ships with each figure.</p>
+        </div>
+        <div id="figbands"></div>
+      </section>
+
+      <!-- ============ 07 THEORY ============ -->
+      <section class="chapter" id="theory" data-title="Propositions P1–P6">
+        <div class="ch-head"><span class="ch-no">07</span><h2>Six propositions, honestly scored — including the two the review broke.</h2></div>
+        <div class="prose">
+          <p class="lead">The idealized picture: the drift dynamics is a kernelized Wasserstein
+          gradient flow on the RL free energy
+          <span class="mono">F<sub>s</sub>(q) = &minus;E<sub>q</sub>[Q] + &alpha;&middot;KL(q&Vert;&mu;)</span>,
+          whose unique minimizer is the tilted target (2), with the equilibrium identifiable:
+          <span class="mono">V<sub>p,q</sub> = 0</span> everywhere iff <span class="mono">q = p = &pi;*</span>.
+          Six propositions connect that picture to the implemented estimator. An external technical
+          review (validated, 2026-07-14) corrected or retracted four of them — the corrections are
+          kept, not hidden, because two of them generated the current best hypotheses for the
+          remaining failures.</p>
+        </div>
+        <div class="insights">
+          <div class="insight">
+            <span class="n">P1</span>
+            <h3>Expectile &kappa; is an improvement operator</h3>
+            <p>Claim to prove: T<sub>&kappa;</sub> contracts for all &kappa;&isin;(0,1) and its fixed
+            point interpolates Q<sup>&mu;</sup> &rarr; Q*<sub>supp</sub> as &kappa;&rarr;1.
+            <b>Correction kept:</b> &kappa;=0.5
+            does not eliminate improvement — one step of exponential tilting is still valid policy
+            improvement. What it removes is <em>recursive propagation</em> through the critic fixed
+            point. The 0.38 plateau is an observation/hypothesis, not a theorem.</p>
+            <span class="status open">corrected &middot; open</span>
+          </div>
+          <div class="insight">
+            <span class="n">P2</span>
+            <h3>Softmax blur bounds the drift target's value gap</h3>
+            <p>As &tau;<sub>adv</sub>&rarr;0 the weights go one-hot on the argmax-advantage candidate;
+            finite &tau;<sub>adv</sub> blends good and mediocre actions. Claim to bound: the value gap
+            of the blend versus the argmax, in terms of &tau;<sub>adv</sub>, advantage spread, and
+            kernel bandwidth — plus SNIS bias at finite M=32. Review note: &tau;<sub>adv</sub> is a
+            bias–variance lever, not a pure sharpness win (figure F4 measures both sides).</p>
+            <span class="status open">open — to bound</span>
+          </div>
+          <div class="insight">
+            <span class="n">P3</span>
+            <h3>Damped ascent has a derivable stability margin</h3>
+            <p>Sufficient condition of the form c<sub>q</sub>&middot;&Vert;H&Vert; &lt;
+            c<sub>d</sub>&middot;&eta;&middot;k&prime; for non-expansive actor iteration; violating it
+            admits limit cycles — the c<sub>q</sub>=1.0 oscillation (0.5&harr;0.0) observed in v11.
+            Two empirical anchor points already exist; figure F5's grid is the test.</p>
+            <span class="status open">open — to prove</span>
+          </div>
+          <div class="insight">
+            <span class="n">P4</span>
+            <h3>The implemented drift is (approximately) a WGF step</h3>
+            <p>The KDE mean-shift/score identity is exact — <b>correction kept:</b> but the normalized
+            field is not automatically the exact Wasserstein gradient flow of a smoothed KL. Claim
+            softened to: a score-difference field toward the SNIS-tilted empirical behavior, with the
+            fixed-point gap from the ideal &pi;* &prop; &mu;e<sup>A/&alpha;</sup> to be characterized.</p>
+            <span class="status fixed">softened</span>
+          </div>
+          <div class="insight">
+            <span class="n">P5</span>
+            <h3>EMA deployment is variance reduction; medoid is mode-seeking</h3>
+            <p>EMA half still open — to show: stationary points unchanged and a
+            &lambda;/(2&minus;&lambda;) variance factor, reconciled with the measured swing drop
+            0.162&rarr;0.082 (confounded with the simultaneous ascent damping).
+            <b>Medoid half refuted:</b>
+            &Sigma;<sub>l</sub>&Vert;g<sub>k</sub>&minus;g<sub>l</sub>&Vert;&sup2; =
+            K&Vert;g<sub>k</sub>&minus;ḡ&Vert;&sup2; + const — the selector picks the sample closest
+            to the <em>mean</em>, which for multimodal action distributions can deploy a between-modes
+            compromise. Candidate contributor to the sparse-manipulation zeros; kernel-mode selector
+            testable on saved checkpoints without retraining (figure F6).</p>
+            <span class="status fixed">half refuted</span>
+          </div>
+          <div class="insight">
+            <span class="n">P6</span>
+            <h3>Contrast and ascent admit no degenerate equilibrium</h3>
+            <p><b>Retracted:</b> false in general — a value margin does not constrain Q-gradients, so
+            drift and ascent can cancel at a contrastive blind spot. Replaced with an empirical probe.</p>
+            <span class="status dead">retracted</span>
+          </div>
+        </div>
+        <p class="prose smallnote">Prover priority: P1(ii)–(iii), P2's blur bound, P3's stability
+        margin — the three that would turn the version line's empirical jumps into derived conditions.
+        The toy-exactness panel (F8) verifies drift field, blur bias, and stability boundary against
+        closed-form ground truth (bimodal Gaussian &mu;, quadratic Q) to pre-empt the
+        estimator-versus-theory objection.</p>
+      </section>
+
+      <!-- ============ 08 LIMITATIONS ============ -->
+      <section class="chapter" id="limits" data-title="Limitations & risks">
+        <div class="ch-head"><span class="ch-no">08</span><h2>What would change the conclusions.</h2></div>
+        <ol class="cavlist">
+          <li><b>The name is taken, and the idea is crowded.</b> Concurrent work DriftQL
+          (arXiv:2606.00350) owns the DQL/DriftQL name with a single-positive drift actor; DFP
+          (arXiv:2605.07727) publishes the Wasserstein-gradient-flow framing. The project's own
+          proposal instructs a rename. The defensible deltas are specific: multi-positive state-local
+          advantage-tilted attraction, the optimistic-expectile h-step critic with LCB and contrast,
+          and the damped-ascent stability + finite-sample blur analysis.</li>
+          <li><b>The comparison is close but not fully apples-to-apples.</b> v11.2 now matches RQL's
+          2M training steps, but RQL uses per-task tuning and 100M-transition datasets on two
+          families, versus one config per family and standard v0 datasets here. The deltas remain
+          conservative on those two families and optimistic nowhere.</li>
+          <li><b>The plateau explanation is a hypothesis.</b> P1(iii) as originally stated was wrong;
+          the &kappa;=0.5 behavior-level cap is consistent with the data but not proven. The &kappa;
+          ablation figure (F3) is the designed test: a behavior-shaped value map at &kappa;=0.5 versus
+          a distance-to-go-shaped map at &kappa;&ge;0.7.</li>
+          <li><b>Deployment may be throwing away solved tasks.</b> The medoid selector is mean-proximal,
+          not mode-seeking — on multimodal action distributions it can deploy a between-modes
+          compromise. This is the live candidate explanation for tasks where rank_acc&asymp;1 yet
+          success is 0, and it is testable on saved checkpoints without retraining.</li>
+          <li><b>Raw-state kNN is the suspect representation for manipulation.</b> Neighbors in raw
+          state space may be meaningless in contact-rich scenes; critic-representation kNN is the
+          proposed comparison.</li>
+          <li><b>Known estimator biases are unfixed.</b> Advantage normalization is batch-global
+          (should be per-state with an epsilon floor); &eta; is not the true actor step size (Adam
+          preconditioning and the generator Jacobian intervene); weight entropy / effective sample
+          size are not yet logged.</li>
+          <li><b>Pre-registered kill condition.</b> If the strength levers land at v11.1 level across
+          the sweep, the one-step drift caps out, and improvement must come from a multi-step
+          generator — the very capacity cost this line exists to avoid.</li>
+        </ol>
+      </section>
+
+      <!-- ============ 09 BOTTOM LINE ============ -->
+      <div style="height:1px"></div>
+    </main>
+  </div>
+</div>
+
+<section class="finale" id="bottomline" data-title="Bottom line" role="region" aria-label="Bottom line">
+  <div class="shell">
+    <div>
+      <span class="eyebrow" style="color:var(--yellow)">09 &middot; Bottom line</span>
+      <h2 style="margin-top:14px">One forward pass is either enough, <span class="yl">or it isn't</span> — and this run decides.</h2>
+      <div class="prose">
+        <p>The drift line's claim was never "beat RQL everywhere." It is that an O(1)-inference
+        policy, drifted toward advantage-tilted actions borrowed from neighboring states, keeps
+        enough of the expressiveness that matters — and that every remaining failure can be named:
+        an expectile that never compounds improvement, a softmax that blurs, an ascent that oscillates,
+        a selector that averages modes.</p>
+        <p id="verdict">The 50-task verdict renders live above as seeds complete. At its latest
+        rebuild, the v11.1 checkpoint of this same pipeline scored 15.8 overall (completed seeds
+        only — its sweep was still partial) against RQL's 55.5; v11.2 carries the strength levers
+        that broke the antmaze plateau in pilot. Where the gap persists, chapters 05–08 say
+        precisely which mechanism to indict next.</p>
+      </div>
+    </div>
+    <div>
+      <span class="eyebrow" style="color:var(--gray)">Next actions in the loop</span>
+      <div class="nextlist">
+        <div><span class="n">01</span><span>Kernel-mode deployment selector on saved checkpoints — no retraining (F6).</span></div>
+        <div><span class="n">02</span><span>&kappa; value-propagation maps and &tau;<sub>adv</sub> U-curve from the ablation runs (F3, F4).</span></div>
+        <div><span class="n">03</span><span>Per-state advantage normalization + ESS/entropy logging.</span></div>
+        <div><span class="n">04</span><span>Critic-representation kNN for manipulation families.</span></div>
+        <div><span class="n">05</span><span>Failing families: sweep &rarr; promote &rarr; rerun via sbatch/gen_sweep.py.</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="end">
+  <div class="shell">
+    <div>
+      <div>DRIFT LINE &middot; 50-task OGBench research report &middot; generated <span id="f-gen">—</span></div>
+      <div>Sources: <a href="https://arxiv.org/abs/2606.17551">RQL, arXiv:2606.17551</a> (appendix Table&nbsp;1 baseline) &middot;
+        <a href="https://arxiv.org/abs/2606.00350">DriftQL, arXiv:2606.00350</a> &middot;
+        <a href="https://arxiv.org/abs/2605.07727">DFP, arXiv:2605.07727</a> &middot;
+        IQL (Kostrikov et&nbsp;al., 2022) &middot; repo docs: DQL_V11_PROPOSAL.md, DQL_THEORY.md, RESULTS_DQL111.md</div>
+    </div>
+    <div>
+      <div>rebuild: <span style="color:var(--yellow)">python viz/build_data.py</span></div>
+      <div>results table: <span style="color:var(--yellow)">python report_dql111.py</span></div>
+      <div>method internal codename DQL v11.x &middot; rename pending (name collision, ch. 08)</div>
+    </div>
+  </div>
+</footer>
+
+<button id="totop" type="button" aria-label="Back to top">&uarr; TOP</button>
 
 <script src="data.js"></script>
 <script>
-const D = window.REPORT_DATA, PAL = ["#76B900","#3B7BBF","#C87A2E","#B04A73"];
-const DOMAINS = ["antmaze","humanoid","scene/puzzle","cube"];
-const $ = (s)=>document.querySelector(s), esc=(t)=>String(t).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
-const tip = $("#tip");
-function showTip(e,html){tip.innerHTML=html;tip.style.opacity=1;
-  tip.style.left=Math.min(e.clientX+14,innerWidth-320)+"px";tip.style.top=(e.clientY+12)+"px";}
-function hideTip(){tip.style.opacity=0;}
+(function(){
+"use strict";
+var D = window.REPORT_DATA;
+var $ = function(s){ return document.querySelector(s); };
+var esc = function(t){ return String(t).replace(/[&<>"]/g, function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); };
+var INK="#111827", YELLOW="#fbd45b", YDEEP="#d8a900", GRAY="#9ca3af", MUTED="#656760", LINE="#d4d3cb";
+var fmt = function(v,d){ return v==null ? "—" : (+v).toFixed(d==null?1:d); };
 
-/* ---------- header chips + tiles ---------- */
-$("#gen").textContent = D.generated;
-const q = D.queue, chips = [];
-if(q.running!=null) chips.push(`<span class="chip">cluster: <b>${q.running}</b> running · <b>${q.pending}</b> pending</span>`);
-D.variants.forEach(v=>chips.push(`<span class="chip">${v.label}: <b>${v.done}</b>/150 seeds done</span>`));
-$("#chips").innerHTML = chips.join("");
+/* ---------- chapter nav (built from sections so IDs always match) ---------- */
+var chapters = [].slice.call(document.querySelectorAll("[data-title]"));
+var navHTML = chapters.map(function(s,i){
+  var no = ("0"+(i+1)).slice(-2);
+  return '<li><a href="#'+s.id+'"><span class="num">'+no+'</span>'+esc(s.getAttribute("data-title"))+'</a></li>';
+}).join("");
+if($("#chnav")) $("#chnav").innerHTML = navHTML;
+if($("#mnav"))  $("#mnav").innerHTML  = navHTML;
 
-const best = [...D.variants].filter(v=>v.overall!=null).sort((a,b)=>b.overall-a.overall)[0];
-$("#tiles").innerHTML = `
-  <div class="tile accent"><div class="k">${best?best.label:"ours"} · overall</div>
-    <div class="v">${best&&best.overall!=null?best.overall:"—"}</div><div class="d">mean over category means</div></div>
-  <div class="tile"><div class="k">RQL · overall</div><div class="v">${D.rql_overall}</div>
-    <div class="d">paper, 2M steps</div></div>
-  <div class="tile"><div class="k">gap to RQL</div>
-    <div class="v">${best&&best.overall!=null?(best.overall-D.rql_overall).toFixed(1):"—"}</div>
-    <div class="d">${best?best.label:""} − RQL</div></div>
-  <div class="tile"><div class="k">runs finished</div>
-    <div class="v">${D.variants.reduce((s,v)=>s+v.done,0)}</div><div class="d">of ${150*D.variants.length} (all variants)</div></div>`;
+/* ---------- reading time ---------- */
+(function(){
+  var main = $("#main"); if(!main) return;
+  var words = (main.textContent||"").trim().split(/\s+/).length;
+  $("#rtime").textContent = "~" + Math.max(1, Math.round(words/230)) + " min read · " + words.toLocaleString() + " words";
+})();
 
-/* ---------- grouped horizontal bar: categories × (variants…, RQL) ---------- */
-(function bench(){
-  const cats = Object.keys(D.rql_cats);
-  const series = D.variants.filter(v=>v.overall!=null).map((v,i)=>({label:v.label,color:PAL[i===0?0:2],get:c=>v.categories[c]}))
-    .concat([{label:"RQL",color:PAL[1],get:c=>D.rql_cats[c]}]);
-  $("#benchLegend").innerHTML = series.map(s=>`<span><span class="sw" style="background:${s.color}"></span>${s.label}</span>`).join("");
-  const bh=13, gap=2, groupPad=14, left=210, right=56, W=1120;
-  const gh = series.length*(bh+gap)+groupPad, H = cats.length*gh+10;
-  const x = v=>left+(W-left-right)*v/100;
-  let g=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px">`;
-  for(const t of [0,25,50,75,100])
-    g+=`<line x1="${x(t)}" y1="0" x2="${x(t)}" y2="${H-14}" stroke="var(--grid)"/>
-        <text x="${x(t)}" y="${H-2}" font-size="11" fill="#8a8a8a" text-anchor="middle">${t}</text>`;
-  cats.forEach((c,ci)=>{
-    const y0=ci*gh;
-    g+=`<text x="${left-10}" y="${y0+gh/2-2}" font-size="12" fill="#555" text-anchor="end">${c}</text>`;
-    series.forEach((s,si)=>{
-      const v=s.get(c), y=y0+si*(bh+gap);
-      if(v==null){g+=`<text x="${x(0)+4}" y="${y+bh-3}" font-size="10" fill="#bbb">pending</text>`;return;}
-      const w=Math.max(x(v)-x(0),2);
-      g+=`<path d="M${x(0)},${y} h${w-4} a4,4 0 0 1 4,4 v${bh-8} a4,4 0 0 1 -4,4 h-${w-4} z"
-            fill="${s.color}" class="hov" data-tip="<b>${esc(c)}</b><br>${s.label}: ${v}"/>`;
-      g+=`<text x="${x(v)+5}" y="${y+bh-3}" font-size="10.5" fill="#333">${v}</text>`;
+if(!D){ return; } /* editorial content stands alone if data.js is missing */
+
+/* ---------- variant selection ---------- */
+var variants = D.variants || [];
+var primary = null, i;
+for(i = variants.length-1; i >= 0; i--){ if(variants[i].overall != null){ primary = variants[i]; break; } }
+var newest = variants.length ? variants[variants.length-1] : null;   /* the variant being run */
+var showVar = primary || newest;                                      /* for tiles/verdict */
+var totalSeeds = 150;
+
+/* ---------- header / hero / strip metadata ---------- */
+$("#m-gen").textContent = D.generated || "—";
+$("#f-gen").textContent = D.generated || "—";
+$("#m-rql").textContent = fmt(D.rql_overall);
+if(newest){
+  var done = newest.done || 0;
+  $("#m-status").textContent = done >= totalSeeds ? "complete · 150/150 seeds"
+    : done + "/" + totalSeeds + " seeds · running";
+  $("#m-ours").textContent = newest.overall != null ? fmt(newest.overall) : "pending";
+  $("#m-ours-d").textContent = newest.label + " · mean of category means" +
+    (done < totalSeeds ? " · " + done + "/" + totalSeeds + " seeds in" : "");
+  if(done < totalSeeds){
+    var band = $("#liveband"); band.hidden = false;
+    $("#live-done").innerHTML = "<b>" + esc(newest.label) + "</b>: " + done + "/" + totalSeeds + " seeds complete";
+    if(D.queue && D.queue.running != null && D.queue.pending != null)
+      $("#live-queue").innerHTML = "cluster: <b>" + D.queue.running + "</b> running · <b>" + D.queue.pending + "</b> pending";
+  }
+}
+
+/* ---------- tiles + win/tie/loss ---------- */
+(function(){
+  var el = $("#tiles"); if(!el) return;
+  var wtl = null;
+  if(showVar){
+    var w=0,t=0,l=0,n=0;
+    (showVar.tasks||[]).forEach(function(tk){
+      if(tk.ours==null || tk.rql==null) return;
+      n++; var d = tk.ours - tk.rql;
+      if(d > 3) w++; else if(d >= -3) t++; else l++;
+    });
+    if(n) wtl = {w:w,t:t,l:l,n:n};
+  }
+  var gap = (showVar && showVar.overall!=null && D.rql_overall!=null)
+    ? showVar.overall - D.rql_overall : null;
+  el.innerHTML =
+    '<div class="tile hot"><div class="k">'+esc(showVar?showVar.label:"ours")+' · overall</div>'+
+      '<div class="v">'+(showVar&&showVar.overall!=null?fmt(showVar.overall):"pending")+'</div>'+
+      '<div class="d">mean over 10 category means</div></div>'+
+    '<div class="tile"><div class="k">RQL · overall</div><div class="v">'+fmt(D.rql_overall)+'</div>'+
+      '<div class="d">paper, 2M steps, appendix Table 1</div></div>'+
+    '<div class="tile"><div class="k">gap to RQL</div><div class="v">'+
+      (gap==null?"—":(gap>0?"+":"")+fmt(gap))+'</div><div class="d">'+esc(showVar?showVar.label:"")+' − RQL</div></div>'+
+    '<div class="tile"><div class="k">wins / ties / losses</div><div class="v">'+
+      (wtl? wtl.w+' <span class="u">/</span> '+wtl.t+' <span class="u">/</span> '+wtl.l : "—")+'</div>'+
+      '<div class="d">'+(wtl? esc(showVar.label)+" · ±3pt band over "+wtl.n+" scored tasks" : "no scored tasks yet")+'</div></div>';
+})();
+
+/* ---------- benchmark bars ---------- */
+(function(){
+  var host = $("#benchChart"); if(!host || !D.rql_cats) return;
+  var cats = Object.keys(D.rql_cats);
+  var series = [];
+  variants.forEach(function(v,vi){
+    series.push({label:v.label, color: vi===variants.length-1 ? YELLOW : GRAY,
+      stroke: INK, get:function(c){ return v.categories ? v.categories[c] : null; }});
+  });
+  series.push({label:"RQL (paper)", color:INK, stroke:INK, get:function(c){ return D.rql_cats[c]; }});
+  $("#benchLegend").innerHTML = series.map(function(s){
+    return '<span><span class="sw" style="background:'+s.color+'"></span>'+esc(s.label)+'</span>';
+  }).join("");
+  var bh=14, gap=3, pad=16, left=232, right=60, W=1080;
+  var gh = series.length*(bh+gap)+pad, H = cats.length*gh+26;
+  var x = function(v){ return left+(W-left-right)*v/100; };
+  var g = '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Grouped horizontal bars: success rate per category for each variant and RQL">';
+  [0,25,50,75,100].forEach(function(t){
+    g += '<line x1="'+x(t)+'" y1="0" x2="'+x(t)+'" y2="'+(H-18)+'" stroke="'+LINE+'"/>' +
+         '<text x="'+x(t)+'" y="'+(H-4)+'" font-size="10" fill="'+MUTED+'" text-anchor="middle">'+t+'</text>';
+  });
+  cats.forEach(function(c,ci){
+    var y0 = ci*gh;
+    g += '<text x="'+(left-12)+'" y="'+(y0+gh/2)+'" font-size="11.5" fill="'+INK+'" text-anchor="end">'+esc(c)+'</text>';
+    series.forEach(function(s,si){
+      var v = s.get(c), y = y0+si*(bh+gap);
+      if(v == null){
+        g += '<text x="'+(x(0)+6)+'" y="'+(y+bh-3)+'" font-size="9.5" fill="'+MUTED+'">pending</text>';
+        return;
+      }
+      var w = Math.max(x(v)-x(0), 1.5);
+      g += '<rect x="'+x(0)+'" y="'+y+'" width="'+w+'" height="'+bh+'" fill="'+s.color+'" stroke="'+s.stroke+'" stroke-width="0.75">'+
+           '<title>'+esc(c)+' — '+esc(s.label)+': '+v+'</title></rect>' +
+           '<text x="'+(x(v)+6)+'" y="'+(y+bh-3)+'" font-size="10" fill="'+INK+'">'+v+'</text>';
     });
   });
-  $("#benchChart").innerHTML=g+"</svg>";
+  host.innerHTML = g + "</svg>";
+})();
+
+/* ---------- training curves small multiples ---------- */
+(function(){
+  var host = $("#curvePanels"), wrap = $("#curveWrap");
+  if(!host || !newest) return;
+  var withCurves = (newest.tasks||[]).filter(function(t){ return t.curve && t.curve.length > 1; });
+  if(withCurves.length < 5){ return; }
+  wrap.hidden = false;
+  var xmax = 1000000;
+  withCurves.forEach(function(t){ t.curve.forEach(function(p){ xmax = Math.max(xmax, p[0]); }); });
+  var cats = [];
+  (newest.tasks||[]).forEach(function(t){ if(cats.indexOf(t.cat) < 0) cats.push(t.cat); });
+  host.innerHTML = cats.map(function(cat){
+    var tasks = withCurves.filter(function(t){ return t.cat === cat; });
+    var W=340, H=200, l=34, b=26, tp=10, r=8;
+    var X = function(s){ return l+(W-l-r)*s/xmax; }, Y = function(v){ return tp+(H-tp-b)*(1-v/100); };
+    var g = '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Success versus training step for '+esc(cat)+'">';
+    [0,50,100].forEach(function(p){
+      g += '<line x1="'+l+'" y1="'+Y(p)+'" x2="'+(W-r)+'" y2="'+Y(p)+'" stroke="'+LINE+'"/>' +
+           '<text x="'+(l-5)+'" y="'+(Y(p)+3)+'" font-size="10" fill="'+MUTED+'" text-anchor="end">'+p+'</text>';
+    });
+    if(xmax > 1200000)
+      g += '<line x1="'+X(1000000)+'" y1="'+tp+'" x2="'+X(1000000)+'" y2="'+(H-b)+'" stroke="'+GRAY+'" stroke-dasharray="4 3"/>';
+    var rql = D.rql_cats[cat];
+    if(rql != null)
+      g += '<line x1="'+l+'" y1="'+Y(rql)+'" x2="'+(W-r)+'" y2="'+Y(rql)+'" stroke="'+INK+'" stroke-dasharray="2 3" opacity="0.55"><title>RQL @2M: '+rql+'</title></line>';
+    tasks.forEach(function(t){
+      var dd = t.curve.map(function(p,i){ return (i?'L':'M')+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1); }).join('');
+      g += '<path d="'+dd+'" fill="none" stroke="'+GRAY+'" stroke-width="1"><title>'+esc(t.env.replace('-singletask','').replace('-v0',''))+'</title></path>';
+    });
+    var by = {};
+    tasks.forEach(function(t){ t.curve.forEach(function(p){ (by[p[0]] = by[p[0]]||[]).push(p[1]); }); });
+    var steps = Object.keys(by).map(Number).sort(function(a,b){ return a-b; })
+      .filter(function(s){ return by[s].length === tasks.length; });   /* cohort-complete steps only: no phantom jumps */
+    if(steps.length > 1){
+      var md = steps.map(function(s,i){
+        var vs = by[s], m = vs.reduce(function(a,c){ return a+c; },0)/vs.length;
+        return (i?'L':'M')+X(s).toFixed(1)+' '+Y(m).toFixed(1);
+      }).join('');
+      g += '<path d="'+md+'" fill="none" stroke="'+INK+'" stroke-width="2"/>';
+    }
+    g += '<text x="'+((l+W-r)/2)+'" y="'+(H-6)+'" font-size="10" fill="'+MUTED+'" text-anchor="middle">0 → '+(xmax/1e6)+'M steps</text></svg>';
+    return '<div><div class="mono" style="font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px">'+esc(cat)+'</div>'+g+'</div>';
+  }).join('');
+})();
+
+/* ---------- 1M -> 2M delta dumbbells ---------- */
+(function(){
+  var host = $("#deltaChart"), wrap = $("#deltaWrap");
+  if(!host || !newest) return;
+  var cats = [], per = {};
+  (newest.tasks||[]).forEach(function(t){
+    if(t.ours_1m == null || t.ours_2m == null) return;
+    (per[t.cat] = per[t.cat] || {a:[], b:[]});
+    per[t.cat].a.push(t.ours_1m); per[t.cat].b.push(t.ours_2m);
+    if(cats.indexOf(t.cat) < 0) cats.push(t.cat);
+  });
+  if(!cats.length) return;   /* stays hidden until 2M snapshots exist */
+  wrap.hidden = false;
+  var m = function(x){ return x.reduce(function(a,b){ return a+b; },0)/x.length; };
+  var rows = cats.map(function(c){ return {cat:c, v1:m(per[c].a), v2:m(per[c].b), rql:D.rql_cats[c], n:per[c].a.length}; });
+  var W=1080, rh=34, left=232, right=130, H=rows.length*rh+30;
+  var x = function(v){ return left+(W-left-right)*v/100; };
+  var g = '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Category success at the 1M and 2M training horizons vs RQL">';
+  [0,25,50,75,100].forEach(function(t){
+    g += '<line x1="'+x(t)+'" y1="0" x2="'+x(t)+'" y2="'+(H-18)+'" stroke="'+LINE+'"/>' +
+         '<text x="'+x(t)+'" y="'+(H-4)+'" font-size="10" fill="'+MUTED+'" text-anchor="middle">'+t+'</text>';
+  });
+  var imp = 0, reg = 0;
+  rows.forEach(function(r,i){
+    var y = i*rh+rh/2, d = r.v2-r.v1;
+    if(d > 1) imp++; else if(d < -1) reg++;
+    g += '<text x="'+(left-12)+'" y="'+(y+4)+'" font-size="11.5" fill="'+INK+'" text-anchor="end">'+esc(r.cat)+'</text>';
+    if(r.rql != null)
+      g += '<line x1="'+x(r.rql)+'" y1="'+(y-9)+'" x2="'+x(r.rql)+'" y2="'+(y+9)+'" stroke="'+INK+'" stroke-width="2" opacity="0.5"><title>RQL @2M: '+r.rql+'</title></line>';
+    g += '<line x1="'+x(r.v1)+'" y1="'+y+'" x2="'+x(r.v2)+'" y2="'+y+'" stroke="'+MUTED+'" stroke-width="2"/>' +
+         '<circle cx="'+x(r.v1)+'" cy="'+y+'" r="4.5" fill="'+GRAY+'" stroke="'+INK+'" stroke-width="0.8"><title>'+esc(r.cat)+' @1M: '+r.v1.toFixed(1)+'</title></circle>' +
+         '<circle cx="'+x(r.v2)+'" cy="'+y+'" r="5" fill="'+YELLOW+'" stroke="'+INK+'" stroke-width="1"><title>'+esc(r.cat)+' @2M: '+r.v2.toFixed(1)+' (n='+r.n+' tasks)</title></circle>' +
+         '<text x="'+(x(Math.max(r.v1, r.v2, r.rql||0))+12)+'" y="'+(y+4)+'" font-size="10.5" fill="'+INK+'">'+r.v2.toFixed(1)+' ('+(d>=0?'+':'')+d.toFixed(1)+')</text>';
+  });
+  host.innerHTML = g + '</svg>';
+  $("#deltaCap").textContent = "Mean per category; gray dot = success at the 1M horizon, yellow dot = at the 2M horizon, dark tick = RQL at 2M. " +
+    imp + " categor" + (imp===1?"y":"ies") + " improved and " + reg + " regressed by more than 1 point with the second million steps. Our reading (interpretation; each point is a mean over seeds): a family-wide bend downward past 1M points to overtraining rather than seed noise.";
+})();
+
+/* ---------- per-task matrix ---------- */
+(function(){
+  var tb = $("#taskTable"); if(!tb || !variants.length) return;
+  var base = variants[0];
+  var head = '<thead><tr><th scope="col">task</th>' +
+    variants.map(function(v){ return '<th scope="col" class="num">'+esc(v.label)+'</th>'; }).join("") +
+    '<th scope="col" class="num">RQL</th><th scope="col" class="num">Δ best−RQL</th>' +
+    '<th scope="col" class="num">rank_acc</th><th scope="col" class="num">w_self</th></tr></thead>';
+  var rows = "", cat = "";
+  (base.tasks||[]).forEach(function(t,i){
+    if(t.cat !== cat){
+      cat = t.cat;
+      rows += '<tr class="catrow"><th scope="rowgroup">'+esc(cat)+'</th>' +
+        variants.map(function(v){ return '<td class="num">'+(v.categories&&v.categories[cat]!=null?+v.categories[cat]:"—")+'</td>'; }).join("") +
+        '<td class="num">'+(D.rql_cats[cat]!=null?+D.rql_cats[cat]:"—")+'</td><td colspan="3"></td></tr>';
+    }
+    var vals = variants.map(function(v){ return v.tasks[i] ? v.tasks[i].ours : null; });
+    var have = vals.filter(function(v){ return v!=null; });
+    var best = have.length ? Math.max.apply(null, have) : null;
+    var d = (best==null || t.rql==null) ? null : best - t.rql;
+    var dr = d==null ? null : (Math.round(d) || 0);   /* || 0 normalizes -0 */
+    /* diagnostics: prefer newest variant's values, fall back to first */
+    var nt = (newest && newest.tasks[i]) || t;
+    var ra = nt.rank_acc!=null ? nt.rank_acc : t.rank_acc;
+    var ws = nt.w_self!=null ? nt.w_self : t.w_self;
+    var cells = variants.map(function(v, vi){
+      var tk = v.tasks[i];
+      if(!tk || tk.ours == null) return '<td class="num">—</td>';
+      var sd = "";
+      if(v === newest && tk.seeds && tk.seeds.length > 1){
+        var mu = tk.seeds.reduce(function(a,b){ return a+b; },0)/tk.seeds.length;
+        var va = tk.seeds.reduce(function(a,b){ return a+(b-mu)*(b-mu); },0)/tk.seeds.length;
+        sd = ' <span style="color:var(--muted);font-size:10.5px">±'+Math.sqrt(va).toFixed(1)+'</span>';
+      }
+      return '<td class="num">'+(+tk.ours)+sd+'</td>';
+    });
+    rows += '<tr><th scope="row" style="font-weight:400;padding-left:26px">task'+(+t.task)+'</th>' +
+      cells.join("") +
+      '<td class="num">'+(t.rql!=null?+t.rql:"—")+'</td>' +
+      '<td class="num">'+(dr==null?"—":(dr>=0?'<span class="pos">+'+dr+'</span>':'<span class="neg">'+dr+'</span>'))+'</td>' +
+      '<td class="num">'+(ra==null?"—":(+ra).toFixed(2))+'</td>' +
+      '<td class="num">'+(ws==null?"—":(+ws).toFixed(3))+'</td></tr>';
+  });
+  var foot = '<tfoot><tr><td colspan="'+(variants.length+5)+'">Δ compares the best variant value against the RQL column; '+
+    '± = population s.d. across seeds (newest variant, shown when >1 seed); rank_acc / w_self are seed-0 diagnostics from the newest variant where available. — = no completed seed yet.</td></tr></tfoot>';
+  tb.innerHTML = '<caption id="taskCaption">Per-task matrix — success % at each variant\'s latest trained horizon (v11.1: 1M · v11.2: 2M), mean of last 3 evals, completed seeds only</caption>' + head + '<tbody>'+rows+'</tbody>' + foot;
 })();
 
 /* ---------- diagnostics scatters ---------- */
-function scatter(title, xs, xlabel, xmax){
-  const W=470,H=330,l=46,b=34,t=14,r=10;
-  const tasks = D.variants[0].tasks.filter(tk=>tk[xs]!=null&&tk.ours!=null);
-  const X=v=>l+(W-l-r)*Math.min(v,xmax)/xmax, Y=v=>t+(H-t-b)*(1-v/100);
-  let g=`<div><div style="font-size:12.5px;color:#555;margin-bottom:4px">${title}</div>
-    <svg viewBox="0 0 ${W} ${H}" width="${W}">`;
-  for(const p of [0,25,50,75,100])
-    g+=`<line x1="${l}" y1="${Y(p)}" x2="${W-r}" y2="${Y(p)}" stroke="var(--grid)"/>
-        <text x="${l-6}" y="${Y(p)+4}" font-size="10.5" fill="#8a8a8a" text-anchor="end">${p}</text>`;
-  for(const p of [0,.25,.5,.75,1].map(f=>f*xmax))
-    g+=`<text x="${X(p)}" y="${H-14}" font-size="10.5" fill="#8a8a8a" text-anchor="middle">${(+p.toFixed(2))}</text>`;
-  g+=`<text x="${(l+W-r)/2}" y="${H-1}" font-size="11" fill="#555" text-anchor="middle">${xlabel}</text>
-      <text x="12" y="${(t+H-b)/2}" font-size="11" fill="#555" transform="rotate(-90 12 ${(t+H-b)/2})" text-anchor="middle">success %</text>`;
-  tasks.forEach(tk=>{
-    g+=`<circle cx="${X(tk[xs])}" cy="${Y(tk.ours)}" r="5" fill="${PAL[DOMAINS.indexOf(tk.domain)]}"
-      stroke="#fff" stroke-width="2" class="hov"
-      data-tip="<b>${esc(tk.env.replace('-singletask','').replace('-v0',''))}</b><br>${xlabel}: ${(+tk[xs]).toFixed(3)} · success: ${tk.ours}"/>`;
+(function(){
+  var host = $("#diagCharts"); if(!host) return;
+  var DOMS = [
+    {key:"antmaze",      label:"antmaze",      draw:function(x,y){ return '<circle cx="'+x+'" cy="'+y+'" r="4.5" fill="'+INK+'"/>'; }},
+    {key:"humanoid",     label:"humanoidmaze", draw:function(x,y){ return '<rect x="'+(x-4)+'" y="'+(y-4)+'" width="8" height="8" fill="'+YDEEP+'" stroke="'+INK+'" stroke-width="0.9"/>'; }},
+    {key:"scene/puzzle", label:"scene / puzzle",draw:function(x,y){ return '<circle cx="'+x+'" cy="'+y+'" r="4.5" fill="none" stroke="'+INK+'" stroke-width="1.6"/>'; }},
+    {key:"cube",         label:"cube",         draw:function(x,y){ return '<path d="M'+x+' '+(y-5.5)+' L'+(x+5.5)+' '+y+' L'+x+' '+(y+5.5)+' L'+(x-5.5)+' '+y+' Z" fill="'+YELLOW+'" stroke="'+INK+'" stroke-width="0.9"/>'; }}
+  ];
+  /* choose the variant with the most diagnostic coverage */
+  var dv = null, cover = -1;
+  variants.forEach(function(v){
+    var c = (v.tasks||[]).filter(function(t){ return t.rank_acc!=null && t.ours!=null; }).length;
+    if(c >= cover){ cover = c; dv = v; }   /* >= : newest variant wins coverage ties */
   });
-  return g+"</svg></div>";
-}
-$("#diagLegend").innerHTML = DOMAINS.map((d,i)=>`<span><span class="sw" style="background:${PAL[i]}"></span>${d}</span>`).join("");
-$("#diagCharts").innerHTML =
-  scatter("F7 · critic ranking accuracy vs success","rank_acc","rank_acc (final)",1) +
-  scatter("F2 · attraction self-weight vs success","w_self","w_self (final)",Math.max(...D.variants[0].tasks.map(t=>t.w_self||0),0.3));
-
-/* ---------- figure roadmap cards ---------- */
-$("#figCards").innerHTML = D.figures.map(f=>{
-  const live = f.id==="f7"||f.id==="f2";
-  const badge = f.media.length? `<span class="badge ready">artifact</span>`
-    : live? `<span class="badge live">live above</span>` : `<span class="badge pending">pending</span>`;
-  const media = f.media.length ? `<div class="media">` + f.media.map(m=>/\.(mp4|webm)$/.test(m)
-    ? `<video src="${m}" controls loop muted></video>` : `<img src="${m}" loading="lazy">`).join("") + `</div>` : "";
-  return `<div class="fig"><h3>${f.title}${badge}</h3>
-    <div class="claim">${f.claim}</div><div class="why">${f.why}</div>
-    <div class="regen">${esc(f.regen)}</div>${media}</div>`;
-}).join("");
-
-/* ---------- per-task table ---------- */
-(function table(){
-  const vs = D.variants.filter(v=>v.tasks.some(t=>t.ours!=null));
-  let h=`<table><tr><th>task</th>${vs.map(v=>`<th class="num">${v.label}</th>`).join("")}
-    <th class="num">RQL</th><th class="num">Δ best</th><th class="num">rank_acc</th><th class="num">w_self</th></tr>`;
-  let cat="";
-  D.variants[0].tasks.forEach((t,i)=>{
-    if(t.cat!==cat){cat=t.cat;
-      h+=`<tr class="cat"><td>${cat}</td>${vs.map(v=>`<td class="num">${v.categories[cat]??"—"}</td>`).join("")}
-        <td class="num">${D.rql_cats[cat]}</td><td colspan="3"></td></tr>`;}
-    const vals=vs.map(v=>v.tasks[i].ours), bestv=Math.max(...vals.filter(v=>v!=null),-1);
-    const d=bestv>=0? bestv-t.rql : null;
-    h+=`<tr><td style="padding-left:22px">task${t.task}</td>
-      ${vals.map(v=>`<td class="num">${v??"—"}</td>`).join("")}
-      <td class="num">${t.rql}</td>
-      <td class="num ${d==null?"":d>=0?"pos":"neg"}">${d==null?"—":(d>0?"+":"")+d.toFixed(0)}</td>
-      <td class="num">${t.rank_acc?.toFixed(2)??"—"}</td><td class="num">${t.w_self?.toFixed(3)??"—"}</td></tr>`;
-  });
-  $("#taskTable").innerHTML=h+"</table>";
+  if(!dv || cover < 3){
+    host.innerHTML = '<p class="smallnote">Diagnostics pending — populated once seed-0 runs report.</p>';
+    return;
+  }
+  $("#diagLegend").innerHTML = DOMS.map(function(d){
+    var sw = '<svg width="14" height="12" style="vertical-align:-2px" aria-hidden="true">'+d.draw(7,6)+'</svg>';
+    return '<span>'+sw+' '+esc(d.label)+'</span>';
+  }).join("");
+  function scatter(field, xlabel, xmax, note){
+    var W=520, H=340, l=48, b=40, t=12, r=14;
+    var pts = (dv.tasks||[]).filter(function(tk){ return tk[field]!=null && tk.ours!=null; });
+    if(!pts.length) return '<p class="smallnote">'+esc(xlabel)+': pending</p>';
+    var X = function(v){ return l+(W-l-r)*Math.min(v,xmax)/xmax; };
+    var Y = function(v){ return t+(H-t-b)*(1-v/100); };
+    var g = '<div><svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Scatter of '+esc(xlabel)+' versus task success, one point per task">';
+    [0,25,50,75,100].forEach(function(p){
+      g += '<line x1="'+l+'" y1="'+Y(p)+'" x2="'+(W-r)+'" y2="'+Y(p)+'" stroke="'+LINE+'"/>' +
+           '<text x="'+(l-7)+'" y="'+(Y(p)+3.5)+'" font-size="9.5" fill="'+MUTED+'" text-anchor="end">'+p+'</text>';
+    });
+    [0,.25,.5,.75,1].forEach(function(f){
+      var p = f*xmax;
+      g += '<text x="'+X(p)+'" y="'+(H-22)+'" font-size="9.5" fill="'+MUTED+'" text-anchor="middle">'+(+p.toFixed(2))+'</text>';
+    });
+    g += '<text x="'+((l+W-r)/2)+'" y="'+(H-6)+'" font-size="10.5" fill="'+INK+'" text-anchor="middle">'+esc(xlabel)+'</text>';
+    g += '<text x="13" y="'+((t+H-b)/2)+'" font-size="10.5" fill="'+INK+'" text-anchor="middle" transform="rotate(-90 13 '+((t+H-b)/2)+')">success %</text>';
+    pts.forEach(function(tk){
+      var dom = DOMS.filter(function(d){ return d.key===tk.domain; })[0] || DOMS[0];
+      var name = tk.env.replace("-singletask","").replace("-v0","");
+      g += '<g>'+dom.draw(X(tk[field]), Y(tk.ours)) +
+           '<title>'+esc(name)+' — '+xlabel+': '+(+tk[field]).toFixed(3)+' · success: '+tk.ours+'</title></g>';
+    });
+    return g + '</svg><p class="smallnote" style="margin:6px 0 0">'+esc(note)+'</p></div>';
+  }
+  var wmax = 0.3;
+  (dv.tasks||[]).forEach(function(t){ if(t.w_self!=null && t.w_self>wmax) wmax = t.w_self; });
+  host.innerHTML =
+    scatter("rank_acc", "rank_acc (final)", 1, "F7 — critic ranking accuracy vs task success ("+dv.label+", seed 0)") +
+    scatter("w_self", "w_self (final)", wmax, "F2 — attraction self-weight vs success; low w_self = heavy borrowing ("+dv.label+", seed 0)");
 })();
 
-/* ---------- hover layer ---------- */
-document.addEventListener("mousemove",e=>{
-  const el=e.target.closest(".hov");
-  el? showTip(e,el.dataset.tip) : hideTip();
+/* ---------- figure bands ---------- */
+(function(){
+  var host = $("#figbands"); if(!host || !D.figures) return;
+  host.innerHTML = D.figures.map(function(f){
+    var shown = (f.media || []).filter(function(m){ return !/\.json$/.test(m); });
+    var ready = shown.length;
+    var media = ready ? '<div class="media">' + shown.map(function(m){
+        return /\.(mp4|webm)$/.test(m)
+          ? '<video src="'+esc(m)+'" controls loop muted playsinline></video>'
+          : '<img src="'+esc(m)+'" alt="'+esc(f.title)+' artifact" loading="lazy">';
+      }).join("") + '</div>' : "";
+    return '<div class="figband"><div class="fh"><h3>'+esc(f.title)+'</h3>' +
+      '<span class="figstate '+(ready?"ready":"pending")+'">'+(ready?"artifact":"pending")+'</span></div>' +
+      '<div class="fb"><p class="claim">'+esc(f.claim)+'</p><p class="why">'+esc(f.why)+'</p>' +
+      '<div class="regenrow"><code tabindex="0" role="region" aria-label="Regenerate command (scrollable)">'+esc(f.regen)+'</code>' +
+      '<button class="copy" type="button" data-copytext="'+esc(f.regen)+'">Copy</button></div>' +
+      media + '</div></div>';
+  }).join("");
+})();
+
+/* ---------- verdict line ---------- */
+(function(){
+  if(!newest || newest.overall == null) return;
+  var gap = D.rql_overall != null ? newest.overall - D.rql_overall : null;
+  var prior = null, j;
+  for(j = 0; j < variants.length; j++){ if(variants[j] !== newest && variants[j].overall != null) prior = variants[j]; }
+  $("#verdict").innerHTML = "Live verdict — <b>" + esc(newest.label) + " overall: " + fmt(newest.overall) +
+    "</b> vs RQL " + fmt(D.rql_overall) + (gap!=null ? " (" + (gap>0?"+":"") + fmt(gap) + ")" : "") +
+    ", " + (newest.done||0) + "/" + totalSeeds + " seeds complete" +
+    ((newest.done||0) < totalSeeds ? " (completed seeds only)" : "") + ". " +
+    (prior ? "The " + esc(prior.label) + " checkpoint of this same pipeline scored " + fmt(prior.overall) + ". " : "") +
+    "Where the gap persists, chapters 05–08 say precisely which mechanism to indict next.";
+})();
+
+/* ---------- interactions ---------- */
+var pbar = $("#pbar"), totop = $("#totop");
+addEventListener("scroll", function(){
+  var h = document.documentElement;
+  var max = h.scrollHeight - h.clientHeight;
+  if(pbar) pbar.style.width = (max>0 ? (h.scrollTop/max*100) : 0) + "%";
+  if(totop) totop.classList.toggle("show", h.scrollTop > 900);
+}, {passive:true});
+if(totop) totop.addEventListener("click", function(){ scrollTo({top:0}); });
+
+/* scrollspy */
+if("IntersectionObserver" in window){
+  var links = {};
+  document.querySelectorAll("nav.chapters a").forEach(function(a){ links[a.getAttribute("href").slice(1)] = a; });
+  var ob = new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if(e.isIntersecting){
+        Object.keys(links).forEach(function(k){ links[k].classList.remove("active"); });
+        if(links[e.target.id]) links[e.target.id].classList.add("active");
+      }
+    });
+  }, {rootMargin:"-15% 0px -70% 0px"});
+  chapters.forEach(function(s){ ob.observe(s); });
+}
+
+/* mobile nav closes on selection */
+var mn = document.querySelector("details.mobile-nav");
+if(mn) mn.addEventListener("click", function(e){ if(e.target.closest("a")) mn.open = false; });
+
+/* copy buttons */
+document.addEventListener("click", function(e){
+  var b = e.target.closest("button.copy"); if(!b) return;
+  var text = b.dataset.copytext || (b.dataset.copy && document.querySelector(b.dataset.copy) ?
+    document.querySelector(b.dataset.copy).textContent : "");
+  if(!text) return;
+  var done = function(){ var o=b.textContent; b.textContent="Copied"; setTimeout(function(){ b.textContent=o; }, 1200); };
+  if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(done, done); }
+  else{
+    var ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta);
+    ta.select(); try{ document.execCommand("copy"); }catch(_){} document.body.removeChild(ta); done();
+  }
 });
+})();
 </script>
 </body>
 </html>

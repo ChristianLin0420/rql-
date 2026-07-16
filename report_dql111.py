@@ -89,7 +89,7 @@ def main():
     n_runs = sum(n for *_ , n, _, _ in [(0, 0, 0, p[3], p[4], p[5]) for p in per_task])
 
     lines.append(f"# {LABEL} -- 50-task OGBench results vs RQL\n")
-    lines.append(f"Runs `{GROUP_PREFIX}` ({LABEL}), {SEEDS} seeds x 1M offline steps, success rate (%) "
+    lines.append(f"Runs `{GROUP_PREFIX}` ({LABEL}), {SEEDS} seeds x {STEPS/1e6:g}M offline steps, success rate (%) "
                  "averaged over the last 3 evals (50 episodes each). RQL reference: "
                  "[arxiv 2606.17551](https://arxiv.org/abs/2606.17551) appendix Table 1.\n")
     if not done:
@@ -128,7 +128,7 @@ def main():
         lines.append(f"| {env.replace('-singletask', '').replace('-v0', '')} | {val} | {r} | {d} | {st} |")
 
     lines.append("\n## Comparison caveats\n")
-    lines.append("- RQL trains **2M** gradient steps (paper Table 2); these runs use **1M**.")
+    lines.append(f"- RQL trains **2M** gradient steps (paper Table 2); these runs use **{STEPS/1e6:g}M**.")
     lines.append("- Paper's `puzzle-4x4` and `cube-quadruple` rows use the **100M-transition** dataset "
                  "variants; we use the standard `-v0` datasets.")
     lines.append(f"- Ours: {SEEDS} seeds, mean of last 3 evals; paper: bootstrap CI over its own seeds/protocol.")
