@@ -9,7 +9,10 @@ CATS = [
     ("humanoidmaze-large",   "navigate", 1, 0.7, 0.0, 0.995, 0),
     ("scene",                "play",     5, 0.7, 0.5, 0.99,  1),
     ("puzzle-3x3",           "play",     5, 0.7, 0.5, 0.99,  1),
-    ("puzzle-4x4",           "play",     5, 0.9, 0.5, 0.99,  1),
+    # puzzle-4x4 MUST NOT sparsify: its datasets contain no r=0 transitions (raw max -1 of
+    # -15..0), so (r != 0) * -1 yields a CONSTANT reward and zero training signal
+    # (see DQL112_FAILURE_ANALYSIS.md, pipeline probe 2026-07-16).
+    ("puzzle-4x4",           "play",     5, 0.9, 0.5, 0.99,  0),
     ("cube-double",          "play",     5, 0.9, 0.5, 0.99,  0),
     ("cube-triple",          "play",     5, 0.9, 0.5, 0.99,  0),
     ("cube-quadruple",       "play",     5, 0.9, 0.5, 0.99,  0),

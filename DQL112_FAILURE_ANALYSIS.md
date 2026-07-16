@@ -7,6 +7,48 @@ the maze geometry; each analysis was independently produced and then adversarial
 spot-checked (headline numbers reproduced: overall 0.1863@1M / 0.1734@2M; correlations
 re-derived within ±0.03). MEASURED vs INTERPRETATION is marked throughout.
 
+> **PROBE UPDATE (2026-07-16, actions 1–2 executed on checkpoints/datasets):**
+> **(a) puzzle-4x4 was a pipeline bug, full stop.** Its datasets contain **zero r=0 transitions**
+> (raw rewards max out at −1 on the −15..0 subtask scale; tasks 1/3/4/5 have literally none,
+> task2 has 30 per 1M), so the `sparse=1` transform `(r != 0) * −1` produced a **constant
+> reward** — the critic had no signal whatsoever. All puzzle-4x4 numbers are uninformative
+> about the algorithm, and §2's "Mode 1 blind-spot parking" reading there is **invalidated**
+> (a constant-reward critic explains the parked equilibrium trivially). Fixed:
+> `slurm/gen_tasks.py` now sets puzzle-4x4 `sparse=0` (semi-dense), tasks.tsv regenerated.
+> Also found: cube-quadruple-task1 has **zero full-success transitions in its dataset**
+> (best is 3-of-4 cubes, 418/5M) — the task-success reward level is unreachable from data
+> (a data property affecting all methods, not a loader bug); cube-triple has 59/3M (0.002%);
+> cube-double's true density is **0.039%**, not the 0.058% in Experiment.md.
+> **(b) §1's root cause is CONFIRMED and even more fixable than hypothesized: it is a
+> POOL-DENSITY artifact, not a representation problem.** Reproducing the agent's exact
+> attraction computation on the 2M cube-double checkpoint: the 256-state training batch
+> yields only 3.9/32 usable neighbors (softmax collapses onto self, w_self 0.671); a
+> **static 100k-state dataset-wide pool drops w_self to 0.173** (below antmaze's 0.42!)
+> with 31.8/32 usable neighbors and *more* coherent neighbor actions (0.57 vs random).
+> Critic-representation kNN is strictly worse (0.266) — **no learned metric needed**.
+> Compute cost of the fix at training time: one 256×100k distance matmul per update —
+> negligible next to the 10-ensemble critic. This is the v11.3 change.
+>
+> **PROBE UPDATE 2 (actions 3–5):**
+> **(c) The deployment selector finding is real and large — on the tasks where the critic
+> has signal.** Paired 100-episode ablation on the 2M puzzle-3x3-task1 checkpoint:
+> medoid 0.41 [0.32,0.51] vs **argmax-Q 0.96–1.00 [0.90,1.00]** — non-overlapping CIs; a
+> pure deployment-rule change recovers the task outright. kernel-mode (0.40) does not help:
+> *any* averaging fails; picking by Q wins. On cube-double the rules tie (medoid 0.08,
+> argmax 0.11, n.s.) — consistent with the Q-spread probe: the critic separates its 32
+> deployment candidates by only 1.1% (cube), 0.5% (scene), 0.25% (puzzle mean — but
+> heavy-tailed, p90 ≈ 4× median, which is where argmax wins) of its data-vs-random scale,
+> vs 2.3–3.4% on locomotion. Scene: medoid 0.33 vs argmax 0.47 (suggestive, CIs overlap;
+> remaining rule-arms still computing). Per-state candidate spread is real everywhere
+> (action std 0.13/dim manip, 0.28–0.36 locomotion) — the generator is multimodal per
+> state, so mean-proximal selection actively averages across modes.
+> **(d) κ=0.9 does NOT unlock the far-goal locomotion failures** (500k, 1 seed):
+> antmaze-giant-task2 stays at 0% throughout — propagation/data-density failure stands;
+> antmaze-large-task2 *reaches 42%* by 150–250k (vs κ=0.7's later ~37% peak) then decays
+> to 26% — the same rise-then-die shape. Reframe: large-task2 is **decay-limited** (§4's
+> erosion mechanism), not propagation-limited; the expectile-gain lever alone is
+> insufficient for either failure class.
+
 **TL;DR — we did not lose to one bug. Five mechanisms, in descending evidence strength:**
 the multi-positive attraction silently collapses to single-positive BC on manipulation
 (raw-state kNN degeneracy); the contrast–ascent minimax has two confirmed failure modes
