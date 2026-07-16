@@ -35,8 +35,18 @@ def load_run(run_dir, epoch=None, with_env=True):
         raise ValueError("with_env=False unsupported: dataset provides example shapes")
 
     ex = train_dataset if isinstance(train_dataset, dict) else dict(train_dataset)
-    agent = agents[config["agent_name"]].create(
-        flags.get("seed", 0), ex["observations"][:1], ex["actions"][:1], config)
+    agent_class = agents[config["agent_name"]]
+    create_kwargs = {}
+    if getattr(agent_class, "needs_pool", False):
+        # Placeholder pool of the right shapes: pool_obs/pool_act are pytree leaves, so
+        # restore_agent overwrites them with the checkpointed pool (byte-exact).
+        import numpy as np
+        obs_dim = ex["observations"].shape[-1]
+        act_dim = ex["actions"].shape[-1] * config["h"]
+        create_kwargs["pool"] = (np.zeros((config["n_pool"], obs_dim), np.float32),
+                                 np.zeros((config["n_pool"], act_dim), np.float32))
+    agent = agent_class.create(
+        flags.get("seed", 0), ex["observations"][:1], ex["actions"][:1], config, **create_kwargs)
     agent = restore_agent(agent, run_dir, epoch)
     return SimpleNamespace(agent=agent, env=env, eval_env=eval_env,
                            train_dataset=ex, config=config, flags=flags,

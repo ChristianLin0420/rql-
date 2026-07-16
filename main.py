@@ -127,11 +127,23 @@ def main(_):
 
     # Create agent.
     agent_class = agents[config['agent_name']]
+    create_kwargs = {}
+    if getattr(agent_class, 'needs_pool', False):
+        # Dataset-wide attraction pool (dql_v11_3): one large draw through the same sampler
+        # the agent trains on -- observations[0] = states, actions[:h] flattened = chunks.
+        # Deterministic under FLAGS.seed, so requeued windows rebuild the identical pool.
+        # NOTE: under --ogbench_dataset_dir multi-window loading this covers window 0 only.
+        pb = train_dataset.sample(config['n_pool'])
+        create_kwargs['pool'] = (
+            pb['observations'][0],
+            np.moveaxis(pb['actions'][:config['h']], 0, 1).reshape(config['n_pool'], -1),
+        )
     agent = agent_class.create(
         FLAGS.seed,
         ex_batch['observations'],
         ex_batch['actions'],
         config,
+        **create_kwargs,
     )
     
     print("replay buffer size:", replay_buffer.size)
