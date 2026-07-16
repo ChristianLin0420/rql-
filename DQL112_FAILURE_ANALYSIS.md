@@ -38,8 +38,12 @@ re-derived within ±0.03). MEASURED vs INTERPRETATION is marked throughout.
 > argmax 0.11, n.s.) — consistent with the Q-spread probe: the critic separates its 32
 > deployment candidates by only 1.1% (cube), 0.5% (scene), 0.25% (puzzle mean — but
 > heavy-tailed, p90 ≈ 4× median, which is where argmax wins) of its data-vs-random scale,
-> vs 2.3–3.4% on locomotion. Scene: medoid 0.33 vs argmax 0.47 (suggestive, CIs overlap;
-> remaining rule-arms still computing). Per-state candidate spread is real everywhere
+> vs 2.3–3.4% on locomotion. Scene: medoid 0.33 vs argmax 0.47 (borderline, ~+14pts).
+> FULL GRID (100 eps/rule): argmax-Q dominates everywhere (cube 0.11–0.16 / scene 0.44–0.47 /
+> puzzle 0.96–1.00 vs medoid 0.08/0.33/0.41); kernel_mode ≈ medoid (0.15/0.34/0.40) — any
+> averaging fails; and single_sample is worst-or-near-worst (0.10/0.24/0.34), so the earlier
+> n=20 "single sample 5× on cube" claim did NOT replicate at n=100.
+> Per-state candidate spread is real everywhere
 > (action std 0.13/dim manip, 0.28–0.36 locomotion) — the generator is multimodal per
 > state, so mean-proximal selection actively averages across modes.
 > **(d) κ=0.9 does NOT unlock the far-goal locomotion failures** (500k, 1 seed):
