@@ -20,6 +20,7 @@ SEEDS = 3
 VARIANTS = [
     ("dql111", "DQL111-50", "DQL v11.1"),
     ("dql112", "DQL112-50", "DQL v11.2"),
+    ("dql113", "DQL113-50", "DQL v11.3"),
 ]
 
 RQL = {  # arxiv 2606.17551 appendix Table 1, RQL column, task1..task5

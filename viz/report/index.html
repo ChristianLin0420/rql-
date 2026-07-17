@@ -209,7 +209,7 @@ svg text{font-family:var(--mono)}
 .tile.hot .d{color:var(--gray)}
 
 /* version timeline */
-.timeline{border:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);margin:28px 0;background:var(--paper)}
+.timeline{border:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);margin:28px 0;background:var(--paper)}
 .tl{padding:20px;border-left:1px solid var(--line);position:relative}
 .tl:first-child{border-left:0}
 .tl .ver{font-family:var(--mono);font-size:12px;color:var(--muted)}
@@ -352,9 +352,10 @@ the per-task matrix (rendered from data.js) are hidden.</div>
       <span class="eyebrow">Offline goal-conditioned RL &middot; 50-task benchmark report</span>
       <h1>The policy is one forward pass,<br><span class="yl">dragged toward the best nearby action.</span></h1>
       <p class="deck">
-        A drifting one-step generator — internal codename DQL v11.2 — evaluated head-to-head against RQL
-        across all 50 OGBench single-task environments: 10 families, 3 seeds, two million offline
-        gradient steps each — step parity with the RQL baseline. This page is the living report: method, theory, live results, and the diagnostics
+        A drifting one-step generator — the DQL v11.x line, currently v11.3 — evaluated head-to-head
+        against RQL across all 50 OGBench single-task environments: 10 families, 3 seeds per
+        variant (v11.2 trained to 2M steps for RQL parity; v11.3 to 1M by design, after the 2M
+        run showed post-peak decay). This page is the living report: method, theory, live results, and the diagnostics
         that say <em>why</em> the numbers are what they are.
       </p>
       <div class="thesis">
@@ -398,9 +399,9 @@ the per-task matrix (rendered from data.js) are hidden.</div>
 
 <section class="strip" aria-label="Key statistics">
   <div class="shell">
-    <div class="cell"><div class="k">Scale</div><div class="v">50 &times; 3 &times; 2M</div><div class="d">tasks &times; seeds &times; offline steps; 1 GPU per task, 4h self-requeueing windows</div></div>
+    <div class="cell"><div class="k">Scale</div><div class="v">50 &times; 3 &times; 1–2M</div><div class="d">tasks &times; seeds &times; offline steps; 1 GPU per task, 4h self-requeueing windows</div></div>
     <div class="cell"><div class="k">Protocol</div><div class="v">last 3 evals</div><div class="d">success %, 50 episodes per eval, every 50k steps; mean over 3 seeds</div></div>
-    <div class="cell"><div class="k">RQL overall</div><div class="v" id="m-rql">—</div><div class="d">paper appendix Table 1 — 2M steps, matched by our extended runs</div></div>
+    <div class="cell"><div class="k">RQL overall</div><div class="v" id="m-rql">—</div><div class="d">paper appendix Table 1 — 2M steps (v11.2 matched; v11.3 runs 1M)</div></div>
     <div class="cell"><div class="k">Ours overall</div><div class="v" id="m-ours">—</div><div class="d" id="m-ours-d">mean of category means, completed seeds only</div></div>
   </div>
 </section>
@@ -635,14 +636,23 @@ deploy: 32 samples from target_actor -&gt; medoid (argmin total pairwise squared
             plateaued at ~0.38 on antmaze-large versus RQL's 0.84: stable-but-weak.</p>
             <div class="jump">swing <b>0.162 &rarr; 0.082</b> &middot; capped at 0.38</div>
           </div>
-          <div class="tl now">
-            <span class="ver">v11.2 — this run</span>
+          <div class="tl">
+            <span class="ver">v11.2</span>
             <h3>Strength levers</h3>
             <p>Sharper tilt (&tau;<sub>adv</sub> 0.5&rarr;0.25), stronger pull (&eta; 1.0&rarr;1.5),
             and the expectile correction: &kappa;=0.7 instead of the 0.5 copied from RQL's flow-value
             regime — restoring a recursive improvement signal. Pilot: antmaze-large 0.38 &rarr; 0.73
             at 100k steps.</p>
-            <div class="jump">antmaze-large <b>0.38 &rarr; 0.73</b> @100k pilot</div>
+            <div class="jump">overall <b>15.8 &rarr; 18.6</b> @1M · decays at 2M</div>
+          </div>
+          <div class="tl now">
+            <span class="ver">v11.3 — this run</span>
+            <h3>Extraction fixes, split verdict</h3>
+            <p>Dataset-wide attraction pool + argmax-Q deployment (both checkpoint-validated).
+            Manipulation transformed — scene 11.6&rarr;41.6, puzzle-3x3 22&rarr;48.4 — but the
+            pool collapsed the locality term everywhere, and forced borrowing broke cyclic
+            locomotion (humanoidmaze 61&rarr;0). The locality bandwidth must adapt per family.</p>
+            <div class="jump">scene <b>&times;3.6</b> · humanoid <b>&minus;61</b> · overall 14.5</div>
           </div>
         </div>
         <div class="pull">
@@ -676,7 +686,7 @@ deploy: 32 samples from target_actor -&gt; medoid (argmin total pairwise squared
           </div>
           <p class="ccap">Success % per category (mean of its 5 tasks). RQL bars are the paper's
           appendix Table 1 values (2M steps); ours show each variant's latest trained horizon —
-          v11.1 at 1M (prior sweep), v11.2 at its 2M target on standard
+          v11.1 at 1M (prior sweep), v11.2 at 2M, v11.3 at 1M — on standard
           <span class="mono">-v0</span> datasets. The 1M&rarr;2M chart below isolates the horizon
           effect. Exact values printed at each bar.</p>
           <div id="benchChart"></div>
@@ -711,14 +721,14 @@ deploy: 32 samples from target_actor -&gt; medoid (argmin total pairwise squared
 
         <div class="tscroll" tabindex="0" role="region" aria-label="Per-task results matrix (scrollable)">
           <table id="taskTable">
-            <caption id="taskCaption">Per-task matrix — success % at each variant's latest trained horizon (v11.1: 1M · v11.2: 2M), mean of last 3 evals</caption>
+            <caption id="taskCaption">Per-task matrix — success % at each variant's latest trained horizon (v11.1: 1M · v11.2: 2M · v11.3: 1M), mean of last 3 evals</caption>
           </table>
         </div>
 
         <div class="takeaway">
           <span class="eyebrow">Read the numbers with these caveats</span>
-          <p><b>Training budget:</b> v11.2 matches RQL's 2M gradient steps (the v11.1 column is a
-          1M-step prior sweep).
+          <p><b>Training budget:</b> v11.2 matches RQL's 2M gradient steps; v11.3 trains 1M by design
+          (the 2M extension measurably hurt); v11.1 is a 1M prior sweep.
           <b>Datasets:</b> the paper's puzzle-4x4 and cube-quadruple rows use 100M-transition
           dataset variants; ours are standard v0. <b>Aggregation:</b> ours is 3 seeds &times; mean
           of last 3 evals; the paper reports bootstrap CIs over its own protocol. Win/tie/loss uses
@@ -868,7 +878,9 @@ deploy: 32 samples from target_actor -&gt; medoid (argmin total pairwise squared
           <li><b>Deployment may be throwing away solved tasks.</b> The medoid selector is mean-proximal,
           not mode-seeking — on multimodal action distributions it can deploy a between-modes
           compromise. This is the live candidate explanation for tasks where rank_acc&asymp;1 yet
-          success is 0, and it is testable on saved checkpoints without retraining.</li>
+          success is 0, and it is testable on saved checkpoints without retraining.
+          <b>Resolved in v11.3:</b> deployment now takes argmax-Q_LCB over the candidates
+          (checkpoint ablation: puzzle-3x3-t1 0.41 &rarr; 0.96–1.00).</li>
           <li><b>Raw-state kNN is the suspect representation for manipulation.</b> Neighbors in raw
           state space may be meaningless in contact-rich scenes; critic-representation kNN is the
           proposed comparison.</li>
@@ -1190,7 +1202,7 @@ if(newest){
   });
   var foot = '<tfoot><tr><td colspan="'+(variants.length+5)+'">Δ compares the best variant value against the RQL column; '+
     '± = population s.d. across seeds (newest variant, shown when >1 seed); rank_acc / w_self are seed-0 diagnostics from the newest variant where available. — = no completed seed yet.</td></tr></tfoot>';
-  tb.innerHTML = '<caption id="taskCaption">Per-task matrix — success % at each variant\'s latest trained horizon (v11.1: 1M · v11.2: 2M), mean of last 3 evals, completed seeds only</caption>' + head + '<tbody>'+rows+'</tbody>' + foot;
+  tb.innerHTML = '<caption id="taskCaption">Per-task matrix — success % at each variant\'s latest trained horizon (v11.1: 1M · v11.2: 2M · v11.3: 1M), mean of last 3 evals, completed seeds only</caption>' + head + '<tbody>'+rows+'</tbody>' + foot;
 })();
 
 /* ---------- diagnostics scatters ---------- */

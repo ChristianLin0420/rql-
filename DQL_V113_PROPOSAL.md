@@ -78,11 +78,38 @@ checkpoints grow ~25–70MB from the stored pool.
 - 13:02 — no decay through 950k: antmaze-large-t1 ~80–86, scene-t1 ~74, puzzle-3x3-t1 100.
 - 18:07 — 65/150 seeds at 1M, 0 errors, all requeue chains healthy.
 
-## S5 — Results
+## S5 — Results (final, 2026-07-17 00:21; 150/150 seeds, zero failures)
 
-`RESULTS_DQL113.md` (generated when all 150 seeds reach 1M; ETA 2026-07-17 morning).
-Dashboard: `viz/report/index.html` (add `("dql113", "DQL113-50", "DQL v11.3")` to
-`VARIANTS` in `viz/build_data.py` and rebuild).
+`RESULTS_DQL113.md`. **Overall 14.5 vs v11.2's 18.6 @1M (RQL 55.5) — a SPLIT VERDICT:**
+
+| family | v11.3 | v11.2@1M | Δ | w_self 11.3 / 11.2 |
+|---|---|---|---|---|
+| scene | **41.6** | 11.6 | **+30.0** | 0.15 / 0.70 |
+| puzzle-3x3 | **48.4** | 22.0 | **+26.4** | 0.20 / 0.73 |
+| puzzle-4x4 | 2.1 | 0.0 | +2.1 | 0.29 / 0.86 |
+| cube-double/triple/quad | 2.7 / 0.2 / 0.0 | 2.7 / 0.5 / 0.0 | ≈0 | 0.21–0.28 |
+| antmaze-large | 48.4 | 65.2 | **−16.8** | 0.12 / 0.42 |
+| antmaze-giant | 1.2 | 15.3 | **−14.1** | 0.09 / 0.31 |
+| humanoidmaze-medium | **0.2** | 61.0 | **−60.8** | 0.21 / 0.63 |
+| humanoidmaze-large | 0.0 | 7.8 | −7.8 | 0.25 / 0.69 |
+
+**Adjudication:** E1 confirmed (w_self 0.09–0.29 everywhere). E2 confirmed spectacularly
+(scene ×3.6, puzzle-3x3 ×2.2 — the two biggest single-family jumps in the line's history).
+E3 confirmed (cube unchanged — critic blind spot binds, as predicted). **E4 FALSIFIED:**
+locomotion regressed, catastrophically on humanoidmaze (curves never rise — training-side,
+not selector-side; antmaze-large-t1 sd0 still reaches 80 @1M with no decay, so the damage
+is partial there). E5 held on tasks that learned (no post-peak decay; puzzle-3x3-t1 flat
+at 100 from 400k). E6 weakly confirmed (puzzle-4x4 nonzero at 2.1).
+
+**Root cause of the E4 failure (measured):** with a 100k-candidate pool, nearest-neighbor
+distances collapse relative to the bandwidth (bw is scaled by the mean batch×pool distance,
+but sq_sel are the 31 SMALLEST of 100k — orders of magnitude below it), so the locality
+penalty vanishes and the advantage softmax borrows maximally in every family. v11.2's high
+humanoid w_self (0.63–0.69) was the CORRECT regime for cyclic gaits — borrowing
+phase-incoherent 21-d gait actions from neighboring states destroys walking. The pool fix
+and the locality scale are separable: **v11.4 = keep the pool, rescale the locality term to
+the selected-neighbor distance scale (e.g. bw from mean(sq_sel), not mean(sq_pool)), so
+w_self adapts per family instead of being forced low globally.**
 
 ## S6 — Sources
 
