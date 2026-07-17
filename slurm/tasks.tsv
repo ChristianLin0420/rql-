@@ -1,51 +1,51 @@
-env_name	h	expectile	rho	discount	sparse	state_bw
-antmaze-large-navigate-singletask-task1-v0	1	0.7	0.5	0.99	0	0.5
-antmaze-large-navigate-singletask-task2-v0	1	0.7	0.5	0.99	0	0.5
-antmaze-large-navigate-singletask-task3-v0	1	0.7	0.5	0.99	0	0.5
-antmaze-large-navigate-singletask-task4-v0	1	0.7	0.5	0.99	0	0.5
-antmaze-large-navigate-singletask-task5-v0	1	0.7	0.5	0.99	0	0.5
-antmaze-giant-navigate-singletask-task1-v0	1	0.7	0.5	0.995	0	0.5
-antmaze-giant-navigate-singletask-task2-v0	1	0.7	0.5	0.995	0	0.5
-antmaze-giant-navigate-singletask-task3-v0	1	0.7	0.5	0.995	0	0.5
-antmaze-giant-navigate-singletask-task4-v0	1	0.7	0.5	0.995	0	0.5
-antmaze-giant-navigate-singletask-task5-v0	1	0.7	0.5	0.995	0	0.5
-humanoidmaze-medium-navigate-singletask-task1-v0	1	0.7	0.0	0.995	0	0.25
-humanoidmaze-medium-navigate-singletask-task2-v0	1	0.7	0.0	0.995	0	0.25
-humanoidmaze-medium-navigate-singletask-task3-v0	1	0.7	0.0	0.995	0	0.25
-humanoidmaze-medium-navigate-singletask-task4-v0	1	0.7	0.0	0.995	0	0.25
-humanoidmaze-medium-navigate-singletask-task5-v0	1	0.7	0.0	0.995	0	0.25
-humanoidmaze-large-navigate-singletask-task1-v0	1	0.7	0.0	0.995	0	0.25
-humanoidmaze-large-navigate-singletask-task2-v0	1	0.7	0.0	0.995	0	0.25
-humanoidmaze-large-navigate-singletask-task3-v0	1	0.7	0.0	0.995	0	0.25
-humanoidmaze-large-navigate-singletask-task4-v0	1	0.7	0.0	0.995	0	0.25
-humanoidmaze-large-navigate-singletask-task5-v0	1	0.7	0.0	0.995	0	0.25
-scene-play-singletask-task1-v0	5	0.7	0.5	0.99	1	1.0
-scene-play-singletask-task2-v0	5	0.7	0.5	0.99	1	1.0
-scene-play-singletask-task3-v0	5	0.7	0.5	0.99	1	1.0
-scene-play-singletask-task4-v0	5	0.7	0.5	0.99	1	1.0
-scene-play-singletask-task5-v0	5	0.7	0.5	0.99	1	1.0
-puzzle-3x3-play-singletask-task1-v0	5	0.7	0.5	0.99	1	1.0
-puzzle-3x3-play-singletask-task2-v0	5	0.7	0.5	0.99	1	1.0
-puzzle-3x3-play-singletask-task3-v0	5	0.7	0.5	0.99	1	1.0
-puzzle-3x3-play-singletask-task4-v0	5	0.7	0.5	0.99	1	1.0
-puzzle-3x3-play-singletask-task5-v0	5	0.7	0.5	0.99	1	1.0
-puzzle-4x4-play-singletask-task1-v0	5	0.9	0.5	0.99	0	1.0
-puzzle-4x4-play-singletask-task2-v0	5	0.9	0.5	0.99	0	1.0
-puzzle-4x4-play-singletask-task3-v0	5	0.9	0.5	0.99	0	1.0
-puzzle-4x4-play-singletask-task4-v0	5	0.9	0.5	0.99	0	1.0
-puzzle-4x4-play-singletask-task5-v0	5	0.9	0.5	0.99	0	1.0
-cube-double-play-singletask-task1-v0	5	0.9	0.5	0.99	0	1.0
-cube-double-play-singletask-task2-v0	5	0.9	0.5	0.99	0	1.0
-cube-double-play-singletask-task3-v0	5	0.9	0.5	0.99	0	1.0
-cube-double-play-singletask-task4-v0	5	0.9	0.5	0.99	0	1.0
-cube-double-play-singletask-task5-v0	5	0.9	0.5	0.99	0	1.0
-cube-triple-play-singletask-task1-v0	5	0.9	0.5	0.99	0	1.0
-cube-triple-play-singletask-task2-v0	5	0.9	0.5	0.99	0	1.0
-cube-triple-play-singletask-task3-v0	5	0.9	0.5	0.99	0	1.0
-cube-triple-play-singletask-task4-v0	5	0.9	0.5	0.99	0	1.0
-cube-triple-play-singletask-task5-v0	5	0.9	0.5	0.99	0	1.0
-cube-quadruple-play-singletask-task1-v0	5	0.9	0.5	0.99	0	1.0
-cube-quadruple-play-singletask-task2-v0	5	0.9	0.5	0.99	0	1.0
-cube-quadruple-play-singletask-task3-v0	5	0.9	0.5	0.99	0	1.0
-cube-quadruple-play-singletask-task4-v0	5	0.9	0.5	0.99	0	1.0
-cube-quadruple-play-singletask-task5-v0	5	0.9	0.5	0.99	0	1.0
+env_name	h	expectile	rho	discount	sparse	state_bw	bw_ps	dm
+antmaze-large-navigate-singletask-task1-v0	1	0.7	0.5	0.99	0	0.5	0	0
+antmaze-large-navigate-singletask-task2-v0	1	0.7	0.5	0.99	0	0.5	0	0
+antmaze-large-navigate-singletask-task3-v0	1	0.7	0.5	0.99	0	0.5	0	0
+antmaze-large-navigate-singletask-task4-v0	1	0.7	0.5	0.99	0	0.5	0	0
+antmaze-large-navigate-singletask-task5-v0	1	0.7	0.5	0.99	0	0.5	0	0
+antmaze-giant-navigate-singletask-task1-v0	1	0.7	0.5	0.995	0	0.5	0	0
+antmaze-giant-navigate-singletask-task2-v0	1	0.7	0.5	0.995	0	0.5	0	0
+antmaze-giant-navigate-singletask-task3-v0	1	0.7	0.5	0.995	0	0.5	0	0
+antmaze-giant-navigate-singletask-task4-v0	1	0.7	0.5	0.995	0	0.5	0	0
+antmaze-giant-navigate-singletask-task5-v0	1	0.7	0.5	0.995	0	0.5	0	0
+humanoidmaze-medium-navigate-singletask-task1-v0	1	0.7	0.0	0.995	0	0.25	1	1
+humanoidmaze-medium-navigate-singletask-task2-v0	1	0.7	0.0	0.995	0	0.25	1	1
+humanoidmaze-medium-navigate-singletask-task3-v0	1	0.7	0.0	0.995	0	0.25	1	1
+humanoidmaze-medium-navigate-singletask-task4-v0	1	0.7	0.0	0.995	0	0.25	1	1
+humanoidmaze-medium-navigate-singletask-task5-v0	1	0.7	0.0	0.995	0	0.25	1	1
+humanoidmaze-large-navigate-singletask-task1-v0	1	0.7	0.0	0.995	0	0.25	1	1
+humanoidmaze-large-navigate-singletask-task2-v0	1	0.7	0.0	0.995	0	0.25	1	1
+humanoidmaze-large-navigate-singletask-task3-v0	1	0.7	0.0	0.995	0	0.25	1	1
+humanoidmaze-large-navigate-singletask-task4-v0	1	0.7	0.0	0.995	0	0.25	1	1
+humanoidmaze-large-navigate-singletask-task5-v0	1	0.7	0.0	0.995	0	0.25	1	1
+scene-play-singletask-task1-v0	5	0.7	0.5	0.99	1	1.0	0	0
+scene-play-singletask-task2-v0	5	0.7	0.5	0.99	1	1.0	0	0
+scene-play-singletask-task3-v0	5	0.7	0.5	0.99	1	1.0	0	0
+scene-play-singletask-task4-v0	5	0.7	0.5	0.99	1	1.0	0	0
+scene-play-singletask-task5-v0	5	0.7	0.5	0.99	1	1.0	0	0
+puzzle-3x3-play-singletask-task1-v0	5	0.7	0.5	0.99	1	1.0	0	0
+puzzle-3x3-play-singletask-task2-v0	5	0.7	0.5	0.99	1	1.0	0	0
+puzzle-3x3-play-singletask-task3-v0	5	0.7	0.5	0.99	1	1.0	0	0
+puzzle-3x3-play-singletask-task4-v0	5	0.7	0.5	0.99	1	1.0	0	0
+puzzle-3x3-play-singletask-task5-v0	5	0.7	0.5	0.99	1	1.0	0	0
+puzzle-4x4-play-singletask-task1-v0	5	0.9	0.5	0.99	0	1.0	0	0
+puzzle-4x4-play-singletask-task2-v0	5	0.9	0.5	0.99	0	1.0	0	0
+puzzle-4x4-play-singletask-task3-v0	5	0.9	0.5	0.99	0	1.0	0	0
+puzzle-4x4-play-singletask-task4-v0	5	0.9	0.5	0.99	0	1.0	0	0
+puzzle-4x4-play-singletask-task5-v0	5	0.9	0.5	0.99	0	1.0	0	0
+cube-double-play-singletask-task1-v0	5	0.9	0.5	0.99	0	1.0	0	0
+cube-double-play-singletask-task2-v0	5	0.9	0.5	0.99	0	1.0	0	0
+cube-double-play-singletask-task3-v0	5	0.9	0.5	0.99	0	1.0	0	0
+cube-double-play-singletask-task4-v0	5	0.9	0.5	0.99	0	1.0	0	0
+cube-double-play-singletask-task5-v0	5	0.9	0.5	0.99	0	1.0	0	0
+cube-triple-play-singletask-task1-v0	5	0.9	0.5	0.99	0	1.0	0	0
+cube-triple-play-singletask-task2-v0	5	0.9	0.5	0.99	0	1.0	0	0
+cube-triple-play-singletask-task3-v0	5	0.9	0.5	0.99	0	1.0	0	0
+cube-triple-play-singletask-task4-v0	5	0.9	0.5	0.99	0	1.0	0	0
+cube-triple-play-singletask-task5-v0	5	0.9	0.5	0.99	0	1.0	0	0
+cube-quadruple-play-singletask-task1-v0	5	0.9	0.5	0.99	0	1.0	0	0
+cube-quadruple-play-singletask-task2-v0	5	0.9	0.5	0.99	0	1.0	0	0
+cube-quadruple-play-singletask-task3-v0	5	0.9	0.5	0.99	0	1.0	0	0
+cube-quadruple-play-singletask-task4-v0	5	0.9	0.5	0.99	0	1.0	0	0
+cube-quadruple-play-singletask-task5-v0	5	0.9	0.5	0.99	0	1.0	0	0

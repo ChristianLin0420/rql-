@@ -51,6 +51,21 @@ synthetic data), deployment + checkpoint round-trip clean.
 ## S4 — Live observations
 
 - 00:55 — 50 jobs submitted (1-min stagger), no name collisions.
+- 01:46 — dual gate passed on MEANS: w_self humanoid 0.47→0.56, antmaze 0.32, manip 0.10–0.19.
+- 03:50 — **INCIDENT (E1/E3 partial failure, caught mid-flight):** humanoidmaze evals flat 0
+  through 550k while v11.2 had 44 by 250k. Selector A/B on the 500k checkpoint exonerated
+  deployment (medoid 1/15 vs argmax 0/15 — both dead) and located the true fault: the
+  batch-MEAN bw normalizer masks a 4× per-state neighbor-density spread, making w_self
+  **bimodal** (p10 0.07 / p90 0.97; the dense gait-corridor states still over-borrow —
+  exactly v11.3's failure, hidden by the mean). Secondary confirmed defect: with ρ=0,
+  argmax-"LCB" is pure mean-Q noise and systematically picks geometric outliers (2× farther
+  than medoid).
+- 04:50 — **v11.4b hotfix, humanoidmaze only** (other families healthy and untouched):
+  `bw_per_state=True` (per-state MEDIAN normalizer; calibration F2 c=0.25 → w_self 0.690
+  with p10 0.362) + `deploy_medoid=True` (new tasks.tsv columns bw_ps/dm). The 10
+  humanoidmaze jobs were restarted from scratch (contaminated 500k discarded). Lesson
+  recorded: calibrate on distributions, not means. New humanoid ETA ~21:00; the health gate
+  for it is w_self p10 > 0.3 and eval signal by 250k.
 
 ## S5 — Results
 

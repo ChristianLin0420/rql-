@@ -125,7 +125,14 @@ class DQLv11_4Agent(flax.struct.PyTreeNode):
         v_state = jax.lax.stop_gradient(self._V("v", s0).mean(0))                        # [B]
         adv_cand = q_im - v_state[:, None]                                               # [B, M] advantage
         adv_n = adv_cand / (jax.lax.stop_gradient(jnp.abs(adv_cand).mean()) + 1e-6)       # scale-free
-        bw = self.config["state_bw"] * (jax.lax.stop_gradient(sq_sel[:, 1:].mean()) + 1e-8)   # v11.4: selected-neighbor scale
+        # v11.4: locality anchored to the selected-neighbor scale. bw_per_state (v11.4b, for
+        # humanoidmaze): per-state MEDIAN normalizer -- the batch-mean masks a 4x spread in
+        # neighbor density, leaving dense gait-corridor states over-borrowing (w_self p10 0.07).
+        if self.config["bw_per_state"]:
+            bw = self.config["state_bw"] * (jax.lax.stop_gradient(
+                jnp.median(sq_sel[:, 1:], axis=1, keepdims=True)) + 1e-8)          # [B, 1]
+        else:
+            bw = self.config["state_bw"] * (jax.lax.stop_gradient(sq_sel[:, 1:].mean()) + 1e-8)
         w = jax.lax.stop_gradient(jax.nn.softmax(adv_n / self.config["adv_temp"] - sq_sel / bw, -1))
         c_sq = jnp.sum(a_cand ** 2, -1)
         g_sq = jnp.sum(gsg ** 2, -1)
@@ -188,12 +195,17 @@ class DQLv11_4Agent(flax.struct.PyTreeNode):
         if temperature > 0:
             a = self.network.select("target_actor")(obs, jax.random.normal(seed, (1, A)) * self.config["expl_temp"])[0]
         else:
-            # v11.3: argmax-Q_LCB over the K candidates (medoid averaged across modes; refuted by
-            # the paired selector ablation -- puzzle-3x3-t1 0.96 vs 0.41, never worse anywhere)
+            # v11.3: argmax-Q_LCB over the K candidates (puzzle-3x3-t1 0.96 vs medoid 0.41).
+            # deploy_medoid (v11.4b, humanoidmaze): with rho=0 and noise-level Q spread over
+            # candidates, argmax picks geometric outliers -- medoid is the sane rule there.
             K = self.config["eval_samples"]
             obs_k = repeat(obs, "1 o -> k o", k=K)
             cand = jnp.clip(self.network.select("target_actor")(obs_k, jax.random.normal(seed, (K, A))), -1, 1)
-            a = cand[jnp.argmax(self._qlcb("target_q", obs_k, cand))]
+            if self.config["deploy_medoid"]:
+                d = jnp.sum((cand[:, None, :] - cand[None, :, :]) ** 2, -1)
+                a = cand[jnp.argmin(d.sum(-1))]
+            else:
+                a = cand[jnp.argmax(self._qlcb("target_q", obs_k, cand))]
         a = jnp.clip(a, -1, 1)
         return rearrange(a, "(h d) -> h d", h=self.config["h"])
 
@@ -240,6 +252,8 @@ def get_config():
         agent_name="dql_v11_4",
         h=5, expectile=0.9, ensemble_ct=10, rho=0.5,
         n_pool=100_000,      # dataset-wide attraction pool size (v11.3)
+        bw_per_state=False,  # per-state locality normalizer (v11.4b: humanoidmaze)
+        deploy_medoid=False, # medoid deployment (v11.4b: humanoidmaze; others argmax-Q_LCB)
         margin=1.0,          # in-support contrast margin (anti-flatness lever)
         cql_coef=1.0,        # contrast weight
         v_coef=1.0,          # state-value expectile weight

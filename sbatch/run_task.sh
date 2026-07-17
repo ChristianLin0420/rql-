@@ -16,9 +16,11 @@ conda activate "$CONDA_ENV"
 idx=${1:?usage: run_task.sh <task_idx 0-49>}
 row=$(sed -n "$((idx + 2))p" slurm/tasks.tsv)   # +2: skip header, 1-indexed
 [ -n "$row" ] || { echo "[run_task] no tasks.tsv row for idx=$idx"; exit 1; }
-IFS=$'\t' read -r ENV H EXP RHO DISC SPARSE BW <<< "$row"
+IFS=$'\t' read -r ENV H EXP RHO DISC SPARSE BW BWPS DM <<< "$row"
 SPARSE_FLAG=""; [ "$SPARSE" = "1" ] && SPARSE_FLAG="--sparse"
 BW_FLAG=""; [ -n "$BW" ] && BW_FLAG="--agent.state_bw=$BW"   # per-family borrowing dial (v11.4+)
+[ "$BWPS" = "1" ] && BW_FLAG="$BW_FLAG --agent.bw_per_state=True"   # v11.4b: per-state normalizer
+[ "$DM" = "1" ] && BW_FLAG="$BW_FLAG --agent.deploy_medoid=True"    # v11.4b: medoid deploy
 
 WINDOW=${WINDOW:-13800}       # use 3h50m of the 4h limit
 MIN_START=${MIN_START:-1500}  # don't start a seed with <25min left; requeue instead
