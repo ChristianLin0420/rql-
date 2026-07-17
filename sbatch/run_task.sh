@@ -16,8 +16,9 @@ conda activate "$CONDA_ENV"
 idx=${1:?usage: run_task.sh <task_idx 0-49>}
 row=$(sed -n "$((idx + 2))p" slurm/tasks.tsv)   # +2: skip header, 1-indexed
 [ -n "$row" ] || { echo "[run_task] no tasks.tsv row for idx=$idx"; exit 1; }
-IFS=$'\t' read -r ENV H EXP RHO DISC SPARSE <<< "$row"
+IFS=$'\t' read -r ENV H EXP RHO DISC SPARSE BW <<< "$row"
 SPARSE_FLAG=""; [ "$SPARSE" = "1" ] && SPARSE_FLAG="--sparse"
+BW_FLAG=""; [ -n "$BW" ] && BW_FLAG="--agent.state_bw=$BW"   # per-family borrowing dial (v11.4+)
 
 WINDOW=${WINDOW:-13800}       # use 3h50m of the 4h limit
 MIN_START=${MIN_START:-1500}  # don't start a seed with <25min left; requeue instead
@@ -43,7 +44,7 @@ for seed in $(seq 0 $((SEEDS - 1))); do
   timeout -k 120 "$left" python main.py \
     --agent="$AGENT" \
     --env_name="$ENV" \
-    --agent.h="$H" --agent.expectile="$EXP" --agent.rho="$RHO" --agent.discount="$DISC" $SPARSE_FLAG \
+    --agent.h="$H" --agent.expectile="$EXP" --agent.rho="$RHO" --agent.discount="$DISC" $SPARSE_FLAG $BW_FLAG \
     --offline_steps="$STEPS" \
     --eval_interval="$EVAL_INTERVAL" --eval_episodes="$EVAL_EPISODES" \
     --log_interval=5000 --save_interval="$SAVE_INTERVAL" \
